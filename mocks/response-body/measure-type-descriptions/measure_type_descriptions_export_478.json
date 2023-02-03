@@ -1,0 +1,10 @@
+{
+  "measureTypeDescriptions": [
+    {
+      "measureType": "478",
+      "descriptionOverlay": "Export authorization",
+      "locale": "EN",
+      "tradeType": "EXPORT"
+    }
+  ]
+}

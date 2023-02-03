@@ -1,0 +1,55 @@
+name: License Updates and Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-license-headers:
+    name: Check license headers
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '^1.15.6'
+
+      - name: Install google/addlicence
+        run: go install github.com/google/addlicense@latest
+
+      - name: Add license headers using addlicense
+        run: addlicense -c 'Crown Copyright (STW)' -check -v -skip html -skip yaml -skip xml -skip yml -skip Dockerfile -skip sql stw-trade-tariff-api-app/ stw-trade-tariff-api-ft/
+
+  add-license-headers:
+    name: Add license headers
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '^1.15.6'
+
+      - name: Install google/addlicence
+        run: go install github.com/google/addlicense@latest
+
+      - name: Add license headers using addlicense
+        run: addlicense -skip html -skip yaml -skip xml -skip yml -skip Dockerfile -skip sql  -c 'Crown Copyright (Single Trade Window)' stw-trade-tariff-api-app/ stw-trade-tariff-api-ft/
+
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v3
+        with:
+          commit-message: 'Updating license headers'
+          base: ${{ github.head_ref }}
+          branch: '${{ github.head_ref }}-licenses'
+          author: github-actions <github-actions@users.noreply.github.com>
+          delete-branch: true
+          title: "Adds missing source code license headers to PR #${{ github.event.pull_request.number }}"
+          body: "Automated PR to add missing license headers to PR #${{ github.event.pull_request.number }}"
+          reviewers: ${{ github.actor }}
+          assignees: ${{ github.actor }}

@@ -1,0 +1,10 @@
+{
+  "measureTypeDescriptions": [
+    {
+      "measureType": "755",
+      "descriptionOverlay": "Import control for waste",
+      "locale": "EN",
+      "tradeType": "IMPORT"
+    }
+  ]
+}

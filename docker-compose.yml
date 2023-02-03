@@ -1,0 +1,40 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: stw-trade-tariff-api-app
+    networks:
+      - stw
+    image: stw/stw-trade-tariff-api-app
+    container_name: stw-trade-tariff-api-app
+    depends_on:
+      - wiremock-ft
+    command: java -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=0.0.0.0:8000,suspend=n -jar /opt/app.jar
+    ports:
+      - "8081:8081"
+      - "8000:8000"
+      - "9000:9000"
+    environment:
+      - SPRING_PROFILES_ACTIVE=local
+
+  wiremock-ft:
+    build:
+      context: mocks
+    networks:
+      - stw
+    image: stw/stw-trade-tariff-api-wiremock
+    container_name: stw-trade-tariff-api-wiremock-ft
+    environment:
+      - DEPLOYMENT_ENVIRONMENT=local
+    ports:
+      - "9090:9090"
+
+networks:
+    stw:
+        driver: bridge
+        ipam:
+            driver: default
+            config:
+                -
+                  subnet: 172.26.1.0/24
+                  gateway: 172.26.1.1

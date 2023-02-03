@@ -1,0 +1,14 @@
+{
+  "request": {
+    "url": "/api/v1/document-code-descriptions?documentCodes=C670&locale=EN&tradeType=EXPORT",
+    "method": "GET"
+  },
+  "response": {
+    "status": 200,
+    "bodyFileName": "document-code-descriptions/document_code_descriptions_export_C670.json",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "priority": 1
+}

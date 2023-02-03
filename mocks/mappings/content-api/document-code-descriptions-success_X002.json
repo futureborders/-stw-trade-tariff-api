@@ -1,0 +1,14 @@
+{
+  "request": {
+    "url": "/api/v1/document-code-descriptions?documentCodes=X002&locale=EN&tradeType=IMPORT",
+    "method": "GET"
+  },
+  "response": {
+    "status": 200,
+    "bodyFileName": "document-code-descriptions/document_code_descriptions_X002.json",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "priority": 1
+}

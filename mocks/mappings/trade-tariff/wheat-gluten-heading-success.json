@@ -1,0 +1,15 @@
+{
+  "request": {
+    "url": "/api/v2/headings/1109",
+    "method": "GET"
+  },
+  "response": {
+    "status": 200,
+    "bodyFileName": "headings/wheat-gluten.json",
+    "fixedDelayMilliseconds": 500,
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "priority": 1
+}

@@ -1,0 +1,15 @@
+{
+  "request": {
+    "urlPattern": "^\/api\/v2\/commodities\/0808108090\\?as_of=2021-10-07$",
+    "method": "GET"
+  },
+  "response": {
+    "status": 200,
+    "bodyFileName": "commodities/apples-and-other-as-of-7th-oct-2021.json",
+    "fixedDelayMilliseconds": 500,
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "priority": 1
+}

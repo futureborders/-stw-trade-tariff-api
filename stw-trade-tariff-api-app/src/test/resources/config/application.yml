@@ -1,0 +1,71 @@
+# ===================================================================
+# Spring Boot configuration.
+#
+# This configuration is used for unit/integration tests.
+# ===================================================================
+
+# ===================================================================
+# Standard Spring Boot properties.
+# Full reference is available at:
+# http://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
+# ===================================================================
+
+spring:
+  application:
+    name: stw-trade-tariff-api
+  jackson:
+    serialization:
+      write-durations-as-timestamps: false
+  mail:
+    host: localhost
+  main:
+    allow-bean-definition-overriding: true
+  messages:
+    basename: i18n/messages
+  mvc:
+    favicon:
+      enabled: false
+  task:
+    execution:
+      thread-name-prefix: stw-trade-tariff-api-task-
+      pool:
+        core-size: 1
+        max-size: 50
+        queue-capacity: 10000
+    scheduling:
+      thread-name-prefix: stw-trade-tariff-api-scheduling-
+      pool:
+        size: 1
+
+server:
+  port: 10344
+  address: localhost
+
+# ===================================================================
+# Application specific properties
+# Add your own application properties here, see the ApplicationProperties class
+# to have type-safe configuration.
+# ===================================================================
+
+application:
+  trade-tariff-api:
+    url: https://www.trade-tariff.service.gov.uk/api/v2
+    timeout: 500ms
+
+metrics:
+  inbound:
+    histogram:
+      bucketsUpperLimits:
+        csv: 0.01, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.25, 4.5, 4.75, 5.0
+    methodPathRegexToMetricName:
+      '[GET-/api/commodities/\d+/measures]': getCommodityMeasures
+      '[GET-/api/commodities/\d+/additional-codes]': getAdditionalCodes
+    excludedPathsRegex:
+      - GET-.*/private/.*
+  outbound:
+    histogram:
+      bucketsUpperLimits:
+        csv: 0.01, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.25, 4.5, 4.75, 5.0
+    methodPathRegexToMetricName:
+      '[GET-/api/v2/commodities/\d+]': getCommodityGB
+      '[GET-/xi/api/v2/commodities/\d+]': getCommodityXI

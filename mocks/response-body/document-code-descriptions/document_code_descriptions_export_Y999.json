@@ -1,0 +1,10 @@
+{
+  "documentCodeDescriptions": [
+    {
+      "documentCode": "Y999",
+      "descriptionOverlay": "Goods for which an export licence is not required. Please use this",
+      "locale": "EN",
+      "tradeType": "EXPORT"
+    }
+  ]
+}

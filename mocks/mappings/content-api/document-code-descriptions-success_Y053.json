@@ -1,0 +1,14 @@
+{
+  "request": {
+    "url": "/api/v1/document-code-descriptions?documentCodes=Y053&locale=EN&tradeType=IMPORT",
+    "method": "GET"
+  },
+  "response": {
+    "status": 200,
+    "bodyFileName": "document-code-descriptions/document_code_descriptions_Y053.json",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "priority": 1
+}

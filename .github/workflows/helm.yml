@@ -1,0 +1,47 @@
+name: Lint and Test Charts
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Fetch history
+        run: git fetch --prune --unshallow
+
+      - name: Run linting
+        id: lint
+        uses: helm/chart-testing-action@v1.0.0-rc.1
+        with:
+          command: lint
+
+      ###
+      # TODO:
+      # The below code is commented out for the time being
+      # whilst the following is resolved in a later PR:
+      # - image set by platform (draft:dev)
+      # - alter the node affinity to allow for kind
+      # - allow the container to be pulled from ECR
+      ###
+
+      # - name: Create kind cluster
+      #   uses: helm/kind-action@v1.0.0-alpha.3
+      #   if: steps.lint.outputs.changed == 'true'
+
+      # - name: Install Istio
+      #   run: |
+      #    curl -L https://istio.io/downloadIstio | ISTIO_VERSION=$ISTIO_VERSION sh -
+      #    export PATH=$PWD/istio-$ISTIO_VERSION/bin:$PATH
+      #    istioctl install --set profile=minimal
+      #   env:
+      #     ISTIO_VERSION: 1.6.0
+
+      # - name: Run chart-testing
+      #   uses: helm/chart-testing-action@v1.0.0-rc.1
+      #   with:
+      #     command: install

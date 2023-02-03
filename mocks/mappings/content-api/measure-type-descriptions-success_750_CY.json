@@ -1,0 +1,14 @@
+{
+  "request": {
+    "url": "/api/v1/measure-type-descriptions?measureTypes=750&locale=CY&tradeType=IMPORT",
+    "method": "GET"
+  },
+  "response": {
+    "status": 200,
+    "bodyFileName": "measure-type-descriptions/measure_type_descriptions_750_CY.json",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "priority": 1
+}

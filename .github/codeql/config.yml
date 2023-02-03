@@ -1,0 +1,9 @@
+name: "STW Trade Tariff API"
+
+disable-default-queries: false
+
+queries:
+  - name: java-lgtm-full
+    uses: github/codeql/java/ql/src/codeql-suites/java-lgtm-full.qls@lgtm.com
+  - name: java-security-extended
+    uses: github/codeql/java/ql/src/codeql-suites/java-security-extended.qls@lgtm.com

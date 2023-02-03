@@ -1,0 +1,15 @@
+{
+  "request": {
+    "urlPattern": "^\/api\/v2\/commodities\/2204299710\\?as_of=\\d{4}-\\d{2}-\\d{2}$",
+    "method": "GET"
+  },
+  "response": {
+    "status": 200,
+    "bodyFileName": "commodities/white-wine.json",
+    "fixedDelayMilliseconds": 500,
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "priority": 1
+}

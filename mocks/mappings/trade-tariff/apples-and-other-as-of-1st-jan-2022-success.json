@@ -1,0 +1,15 @@
+{
+  "request": {
+    "urlPattern": "^\/api\/v2\/commodities\/0808108090\\?as_of=2022-01-01$",
+    "method": "GET"
+  },
+  "response": {
+    "status": 200,
+    "bodyFileName": "commodities/apples-and-other-as-of-1st-jan-2022.json",
+    "fixedDelayMilliseconds": 500,
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "priority": 1
+}

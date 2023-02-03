@@ -1,0 +1,15 @@
+{
+  "request": {
+    "urlPattern": "^\/api\/v2\/commodities\/9706000000\\?as_of=\\d{4}-\\d{2}-\\d{2}$",
+    "method": "GET"
+  },
+  "response": {
+    "status": 200,
+    "bodyFileName": "commodities/prohibitions_with_addition_code_body.json",
+    "fixedDelayMilliseconds": 500,
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "priority": 1
+}

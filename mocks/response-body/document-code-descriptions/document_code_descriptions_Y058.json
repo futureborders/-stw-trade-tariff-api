@@ -1,0 +1,10 @@
+{
+  "documentCodeDescriptions": [
+    {
+      "documentCode": "Y058",
+      "descriptionOverlay": "Your shipment contains goods which are for passengers' personal luggage and are intended for personal consumption or use.",
+      "locale": "EN",
+      "tradeType": "IMPORT"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "request": {
+    "urlPattern": "^\/api\/v2\/commodities\/1109000000(\\?as_of=\\d{4}-\\d{2}-\\d{2})?$",
+    "method": "GET"
+  },
+  "response": {
+    "status": 301,
+    "body" : "<html><body>You are being <a href=\"https://localhost:9090/api/v2/headings/1109\">redirected</a>. </body></html>",
+    "fixedDelayMilliseconds": 500,
+    "headers": {
+      "Location" : "/api/v2/headings/1109",
+      "Connection" : "close",
+      "Content-Type" : "text/html; charset=UTF-8"
+    }
+  },
+  "priority": 1
+}
+

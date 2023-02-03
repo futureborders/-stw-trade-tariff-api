@@ -1,0 +1,131 @@
+# ===================================================================
+# Spring Boot configuration.
+#
+# This configuration will be overridden by the Spring profile you use,
+# for example application-dev.yml if you use the "dev" profile.
+# ===================================================================
+
+# ===================================================================
+# Standard Spring Boot properties.
+# Full reference is available at:
+# http://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
+# ===================================================================
+
+spring:
+  application:
+    name: stw-trade-tariff-api
+  profiles:
+    default: ${APP_ENVIRONMENT:dev}
+    active: ${APP_ENVIRONMENT:dev}
+  jmx:
+    enabled: false
+  messages:
+    basename: i18n/messages
+  main:
+    allow-bean-definition-overriding: true
+    banner-mode: "off"
+  mvc:
+    favicon:
+      enabled: false
+  codec:
+    max-in-memory-size: 1MB
+  output:
+    ansi:
+      console-available: true
+server:
+  servlet:
+    session:
+      cookie:
+        http-only: true
+  port: 8081
+# ===================================================================
+# Application specific properties
+# Add your own application properties here, see the ApplicationProperties class
+# to have type-safe configuration.
+# ===================================================================
+
+application:
+  trade-tariff-api:
+    url: ${EXT_TARIFF_API_HOST_URL:https://www.trade-tariff.service.gov.uk}
+    timeout: ${STW_SIGNPOSTING_API_OTT_API_TIMEOUT:20s}
+    retry-maxAttempt: ${STW_SIGNPOSTING_API_OTT_API_RETRY_COUNT:2}
+    retry-minBackoff: ${STW_SIGNPOSTING_API_OTT_API_RETRY_BACK_OFF_DURATION:1s}
+  content-api:
+    url: ${STWGS_CONTENT_API_URL}
+    timeout: ${STWGS_CONTENT_API_TIMEOUT:PT60S}
+
+stw:
+  circuit-breaker-config:
+    enable: ${STW_SIGNPOSTING_API_CB_ENABLE:true}
+    minimum-number-of-calls: ${STW_SIGNPOSTING_API_CB_MIN_NO_OF_CALLS:10}
+    sliding-window-size: ${STW_SIGNPOSTING_API_CB_SLIDING_WINDOW_SIZE:100}
+    sliding-window-type: ${STW_SIGNPOSTING_API_CB_SLIDING_WINDOW_TYPE:COUNT_BASED}
+    wait-duration-in-open-state: ${STW_SIGNPOSTING_API_CB_DURATION_IN_OPEN_STATE:PT30S}
+    permitted-number-of-calls-in-half-open-state: ${STW_SIGNPOSTING_API_CB_PERMITTED_CALLS_IN_HALF_OPEN_STATE:30}
+    failure-rate-threshold: ${STW_SIGNPOSTING_API_CB_FAILURE_RATE:100.0f}
+metrics:
+  inbound:
+    histogram:
+      bucketsUpperLimits:
+        csv: 0.01, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.25, 4.5, 4.75, 5.0
+    methodPathRegexToMetricName:
+      '[GET-/api/commodities/\d+/measures]': getCommodityMeasures
+      '[GET-/api/v1/commodities/\d+/restrictive-measures]': getRestrictiveMeasures
+      '[GET-/api/commodities/\d+/duties]': getTariffAndTaxes
+      '[GET-/api/commodities/\d+/additional-codes]': getAdditionalCodes
+    excludedPathsRegex:
+      - GET-.*/private/.*
+  outbound:
+    histogram:
+      bucketsUpperLimits:
+        csv: 0.01, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.25, 4.5, 4.75, 5.0
+    methodPathRegexToMetricName:
+      '[GET-/api/v2/commodities/\d+]': getCommodityGB
+      '[GET-/xi/api/v2/commodities/\d+]': getCommodityXI
+
+management:
+  server:
+    port: 9000
+  endpoints:
+    web:
+      exposure.include: metrics,prometheus,health
+      path-mapping:
+        health: probes
+        prometheus: private/metrics
+    base-path: /
+  endpoint:
+    metrics.enabled: true
+    prometheus.enabled: true
+    circuitbreakers.enabled: true
+    info.enabled: true
+    health:
+      livenessState:
+        enabled: true
+      readinessState:
+        enabled: true
+      show-details: ALWAYS
+      probes:
+        enabled: true
+      group:
+        ping:
+          include: ping
+        readiness:
+          include: diskSpace
+        liveness:
+          include: diskSpace
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: stw-trade-tariff-api
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true
+        resilience4j:
+          circuitbreaker:
+            calls: true
+    use-global-registry: false

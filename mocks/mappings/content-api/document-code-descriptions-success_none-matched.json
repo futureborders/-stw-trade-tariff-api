@@ -1,0 +1,19 @@
+{
+  "request": {
+    "urlPath": "/api/v1/document-code-descriptions",
+    "queryParameters": {
+      "documentCodes": {
+        "matches": "([a-zA-Z0-9,]*)"
+      }
+    },
+    "method": "GET"
+  },
+  "response": {
+    "status": 200,
+    "bodyFileName": "document-code-descriptions/document_code_descriptions_none-matched.json",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "priority": 9
+}

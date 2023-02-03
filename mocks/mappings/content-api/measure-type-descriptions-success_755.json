@@ -1,0 +1,14 @@
+{
+  "request": {
+    "url": "/api/v1/measure-type-descriptions?measureTypes=755&locale=EN&tradeType=IMPORT",
+    "method": "GET"
+  },
+  "response": {
+    "status": 200,
+    "bodyFileName": "measure-type-descriptions/measure_type_descriptions_755.json",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "priority": 1
+}

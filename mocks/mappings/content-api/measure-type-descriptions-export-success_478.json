@@ -1,0 +1,14 @@
+{
+  "request": {
+    "url": "/api/v1/measure-type-descriptions?measureTypes=478&locale=EN&tradeType=EXPORT",
+    "method": "GET"
+  },
+  "response": {
+    "status": 200,
+    "bodyFileName": "measure-type-descriptions/measure_type_descriptions_export_478.json",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "priority": 1
+}

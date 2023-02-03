@@ -1,0 +1,10 @@
+{
+  "measureTypeDescriptions": [
+    {
+      "measureType": "305",
+      "descriptionOverlay": "Value added tax cy content",
+      "locale": "CY",
+      "tradeType": "IMPORT"
+    }
+  ]
+}

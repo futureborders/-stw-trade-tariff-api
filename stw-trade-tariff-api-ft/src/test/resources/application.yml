@@ -1,0 +1,20 @@
+spring:
+  profiles:
+    active: local
+
+---
+
+spring:
+  profiles: local
+
+wiremock:
+  port: 9090
+  host: localhost
+
+application:
+  host: localhost
+  port: 8081
+  contextPath:
+
+---
+

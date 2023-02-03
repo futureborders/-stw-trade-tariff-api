@@ -1,0 +1,11 @@
+{
+  "measureTypeDescriptions": [
+    {
+      "measureType": "750",
+      "descriptionOverlay": "## Export Organic products: import control",
+      "locale": "EN",
+      "tradeType":"EXPORT"
+
+    }
+  ]
+}

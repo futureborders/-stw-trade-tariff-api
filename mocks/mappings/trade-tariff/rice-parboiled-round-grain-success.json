@@ -1,0 +1,15 @@
+{
+  "request": {
+    "urlPattern": "^\/api\/v2\/commodities\/1006201100\\?as_of=\\d{4}-\\d{2}-\\d{2}$",
+    "method": "GET"
+  },
+  "response": {
+    "status": 200,
+    "bodyFileName": "commodities/rice-parboiled-round-grain.json",
+    "fixedDelayMilliseconds": 500,
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "priority": 1
+}

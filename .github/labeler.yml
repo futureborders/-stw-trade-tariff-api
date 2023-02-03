@@ -1,0 +1,18 @@
+platform:
+  - charts/**/**/*.yaml
+  - charts/**/*.yaml
+  - Jenkinsfile
+  - .github/workflows/*.yml
+  - Dockerfile
+
+test:
+  - src/test/*
+
+documentation:
+  - README.md
+
+enhancement:
+  - src/*
+
+dependency:
+  - pom.xml

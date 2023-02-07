@@ -20,6 +20,7 @@
 
   <properties>
     <revision>0.0.1-SNAPSHOT</revision>
+    <maven.gitcommitid.skip>true</maven.gitcommitid.skip>
   </properties>
 
   <repositories>

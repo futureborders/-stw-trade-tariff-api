@@ -14,18 +14,17 @@
 
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureUnit.Type.UNIT;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureUnit.Type.VOLUME;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureUnit.Type.WEIGHT;
-
-import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureUnit.Type;
 
-public class MeasureUnitTest {
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureUnit.Type.*;
+
+class MeasureUnitTest {
 
   private static Stream<Arguments> measureUnitToEnglishVerb() {
     return Stream.of(
@@ -33,32 +32,32 @@ public class MeasureUnitTest {
         Arguments.of("CCT", "has a carrying capacity of"),
         Arguments.of("CEN", "consists of"),
         Arguments.of("CTM", "boasts"),
-        Arguments.of("DAP", "weighs"),
-        Arguments.of("DHS", "weighs"),
-        Arguments.of("DTN", "weighs"),
+        Arguments.of("DAP", "weigh"),
+        Arguments.of("DHS", "weigh"),
+        Arguments.of("DTN", "weigh"),
         Arguments.of("EUR", "is valued at"),
-        Arguments.of("GFI", "weighs"),
+        Arguments.of("GFI", "weigh"),
         Arguments.of("GP1", "is produced in"),
-        Arguments.of("GRM", "weighs"),
-        Arguments.of("GRT", "weighs"),
+        Arguments.of("GRM", "weigh"),
+        Arguments.of("GRT", "weigh"),
         Arguments.of("HLT", "is"),
         Arguments.of("HMT", "measures"),
-        Arguments.of("KAC", "weighs"),
-        Arguments.of("KCC", "weighs"),
-        Arguments.of("KCL", "weighs"),
-        Arguments.of("KGM", "weighs"),
+        Arguments.of("KAC", "weigh"),
+        Arguments.of("KCC", "weigh"),
+        Arguments.of("KCL", "weigh"),
+        Arguments.of("KGM", "weigh"),
         Arguments.of("NO_UNIT_CODE", "the unit is"),
         Arguments.of("KLT", "is"),
-        Arguments.of("KMA", "weighs"),
+        Arguments.of("KMA", "weigh"),
         Arguments.of("KMT", "measures"),
-        Arguments.of("KNI", "weighs"),
-        Arguments.of("KNS", "weighs"),
-        Arguments.of("KPH", "weighs"),
-        Arguments.of("KPO", "weighs"),
-        Arguments.of("KPP", "weighs"),
-        Arguments.of("KSD", "weighs"),
-        Arguments.of("KSH", "weighs"),
-        Arguments.of("KUR", "weighs"),
+        Arguments.of("KNI", "weigh"),
+        Arguments.of("KNS", "weigh"),
+        Arguments.of("KPH", "weigh"),
+        Arguments.of("KPO", "weigh"),
+        Arguments.of("KPP", "weigh"),
+        Arguments.of("KSD", "weigh"),
+        Arguments.of("KSH", "weigh"),
+        Arguments.of("KUR", "weigh"),
         Arguments.of("LPA", "is"),
         Arguments.of("LTR", "is"),
         Arguments.of("MIL", "consists of"),
@@ -71,7 +70,7 @@ public class MeasureUnitTest {
         Arguments.of("NCL", "consists of"),
         Arguments.of("NPR", "consists of"),
         Arguments.of("TJO", "has a gross calorific value of"),
-        Arguments.of("TNE", "weighs"),
+        Arguments.of("TNE", "weigh"),
         Arguments.of("WAT", "has a wattage of"));
   }
 

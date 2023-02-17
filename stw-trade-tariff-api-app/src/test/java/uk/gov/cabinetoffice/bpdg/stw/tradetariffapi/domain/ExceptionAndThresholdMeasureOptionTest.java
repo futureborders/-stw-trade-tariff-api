@@ -14,12 +14,12 @@
 
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.model.DocumentCodeDescription;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 class ExceptionAndThresholdMeasureOptionTest {
@@ -48,7 +48,7 @@ class ExceptionAndThresholdMeasureOptionTest {
 
     assertThat(exceptionAndThresholdMeasureOption.getDescriptionOverlay())
         .isEqualTo(
-            "If your shipment contains goods intended for scientific purposes, research or diagnostic samples and weighs less than 2 kilograms, then your goods are exempt.");
+            "If your shipment contains goods intended for scientific purposes, research or diagnostic samples and weigh less than 2 kilograms, then your goods are exempt.");
   }
 
   @Test
@@ -102,7 +102,7 @@ class ExceptionAndThresholdMeasureOptionTest {
 
     assertThat(exceptionAndThresholdMeasureOption.getDescriptionOverlay())
         .isEqualTo(
-            "My shipment contains goods intended for scientific purposes, research or diagnostic samples and weighs less than 2 kilograms, then your goods are exempt.");
+            "My shipment contains goods intended for scientific purposes, research or diagnostic samples and weigh less than 2 kilograms, then your goods are exempt.");
   }
 
   @Test
@@ -129,6 +129,6 @@ class ExceptionAndThresholdMeasureOptionTest {
 
     assertThat(exceptionAndThresholdMeasureOption.getDescriptionOverlay())
         .isEqualTo(
-            "If your goods are intended for scientific purposes. Also, research or diagnostic samples is covered and weighs less than 2 kilograms, then your goods are exempt.");
+            "If your goods are intended for scientific purposes. Also, research or diagnostic samples is covered and weigh less than 2 kilograms, then your goods are exempt.");
   }
 }

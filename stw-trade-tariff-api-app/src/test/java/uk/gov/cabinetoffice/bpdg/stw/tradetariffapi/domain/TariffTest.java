@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 public class TariffTest {
 
   @Test
-  void shouldGetAdditionCode() {
+  void shouldGetAdditionCode(){
     Tariff tariff = Tariff.builder().build();
     assertThat(tariff.getAdditionalCode()).isEmpty();
 
@@ -34,7 +34,7 @@ public class TariffTest {
   }
 
   @Test
-  void shouldGetQuota() {
+  void shouldGetQuota(){
     Tariff tariff = Tariff.builder().build();
     assertThat(tariff.getQuota()).isEmpty();
 
@@ -43,4 +43,5 @@ public class TariffTest {
     assertThat(tariff.getQuota()).isNotEmpty();
     assertThat(tariff.getQuota().get()).isEqualTo(quota);
   }
+
 }

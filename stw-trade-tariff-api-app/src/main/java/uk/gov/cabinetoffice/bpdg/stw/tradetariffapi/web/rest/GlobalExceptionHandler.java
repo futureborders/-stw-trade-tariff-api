@@ -43,24 +43,24 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(ConstraintViolationException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   public ValidationErrorResponse handleConstraintViolationException(
-      ConstraintViolationException ex) {
+    ConstraintViolationException ex) {
     log.error("Handling ConstraintViolationException", ex);
     return ValidationErrorResponse.builder()
-        .validationErrors(
-            ex.getConstraintViolations().stream()
-                .map(
-                    violation ->
-                        ValidationError.builder()
-                            .fieldName(
-                                violation
-                                    .getPropertyPath()
-                                    .toString()
-                                    .substring(
-                                        violation.getPropertyPath().toString().indexOf(".") + 1))
-                            .message(violation.getMessage())
-                            .build())
-                .collect(Collectors.toList()))
-        .build();
+      .validationErrors(
+        ex.getConstraintViolations().stream()
+          .map(
+            violation ->
+              ValidationError.builder()
+                .fieldName(
+                  violation
+                    .getPropertyPath()
+                    .toString()
+                    .substring(
+                      violation.getPropertyPath().toString().indexOf(".") + 1))
+                .message(violation.getMessage())
+                .build())
+          .collect(Collectors.toList()))
+      .build();
   }
 
   @ExceptionHandler(ServerWebInputException.class)
@@ -68,19 +68,19 @@ public class GlobalExceptionHandler {
   public ValidationErrorResponse handleServerWebInputException(ServerWebInputException ex) {
     log.error("Handling ServerWebInputException", ex);
     return ValidationErrorResponse.builder()
-        .validationErrors(
-            List.of(
-                ValidationError.builder()
-                    .fieldName(Objects.requireNonNull(ex.getMethodParameter()).getParameterName())
-                    .message(
-                        ex.getRootCause() != null ? ex.getRootCause().getMessage() : ex.getReason())
-                    .build()))
-        .build();
+      .validationErrors(
+        List.of(
+          ValidationError.builder()
+            .fieldName(Objects.requireNonNull(ex.getMethodParameter()).getParameterName())
+            .message(
+              ex.getRootCause() != null ? ex.getRootCause().getMessage() : ex.getReason())
+            .build()))
+      .build();
   }
 
   @ExceptionHandler(ValidationException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
-  public ValidationErrorResponse handleValidationException(ValidationException ex) {
+  public ValidationErrorResponse handleServerWebInputException(ValidationException ex) {
     log.error("Handling ValidationException", ex);
     return ValidationErrorResponse.builder()
         .validationErrors(

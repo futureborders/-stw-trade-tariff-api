@@ -33,9 +33,11 @@ public class Measure {
   AdditionalCode additionalCode;
   String dutyValue;
   String quotaNumber;
-  @Singular List<MeasureCondition> measureConditions;
+  @Singular
+  List<MeasureCondition> measureConditions;
   String legalActId;
-  @Singular Set<String> excludedCountries;
+  @Singular
+  Set<String> excludedCountries;
 
   public Optional<AdditionalCode> getAdditionalCode() {
     return Optional.ofNullable(additionalCode);

@@ -21,25 +21,24 @@ import java.lang.reflect.Field;
 import java.util.Set;
 
 public class ReflectionUtils {
-  public static <PARENT_CLASS> Set<PARENT_CLASS> getFieldsOfType(
-      Object object, Class<PARENT_CLASS> classOfFields) {
-    return ImmutableSet.copyOf(object.getClass().getDeclaredFields()).stream()
-        .filter(field -> classOfFields.isAssignableFrom(field.getType()))
-        .map(field -> getNonNullFieldValue(object, field))
-        .map(classOfFields::cast)
-        .collect(toSet());
-  }
-
-  private static Object getNonNullFieldValue(Object object, Field field) {
-    try {
-      field.setAccessible(true);
-      Object value = field.get(object);
-      if (value == null) {
-        throw new IllegalArgumentException("Field: " + field.getName() + " is null");
-      }
-      return value;
-    } catch (IllegalAccessException e) {
-      throw new RuntimeException(e);
+    public static <PARENT_CLASS> Set<PARENT_CLASS> getFieldsOfType(Object object, Class<PARENT_CLASS> classOfFields) {
+        return ImmutableSet.copyOf(object.getClass().getDeclaredFields()).stream()
+                .filter(field -> classOfFields.isAssignableFrom(field.getType()))
+                .map(field -> getNonNullFieldValue(object, field))
+                .map(classOfFields::cast)
+                .collect(toSet());
     }
-  }
+
+    private static Object getNonNullFieldValue(Object object, Field field) {
+        try {
+            field.setAccessible(true);
+            Object value = field.get(object);
+            if (value == null) {
+                throw new IllegalArgumentException("Field: " + field.getName() + " is null");
+            }
+            return value;
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

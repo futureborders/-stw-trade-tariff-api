@@ -17,28 +17,28 @@ package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.service.measureoptions;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.config.AppConfig;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.model.DocumentCodeDescription;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.repository.DocumentCodeDescriptionRepository;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.repository.DocumentCodeDescriptionContentRepo;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.DocumentCodeMeasureOption;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.DocumentaryMeasureCondition;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ExceptionMeasureOption;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureCondition;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureConditionType;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureOption;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureOptions;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.NegativeMeasureCondition;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ThresholdMeasureCondition;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ThresholdMeasureOption;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
 
 @Component
 @AllArgsConstructor
@@ -49,39 +49,32 @@ public class SingleMeasureOptionHandler {
       Comparator.comparing(
           measureCondition -> measureCondition.getMeasureConditionType().getOrder());
   protected static final Comparator<MeasureCondition> DOCUMENT_CODE_COMPARATOR =
-      Comparator.comparing(
-          t ->
-              t instanceof DocumentaryMeasureCondition
-                  ? ((DocumentaryMeasureCondition) t).getDocumentCode()
-                  : "");
+      Comparator.comparing(MeasureCondition::getDocumentCode);
 
-  private final DocumentCodeDescriptionRepository documentCodeDescriptionRepository;
+  private final DocumentCodeDescriptionContentRepo documentCodeDescriptionContentRepo;
 
   public Mono<MeasureOptions> getMeasureOption(
-      List<MeasureCondition> measureConditions, TradeType tradeType, Locale locale) {
+      List<MeasureCondition> measureConditions, UkCountry destinationUkCountry) {
 
     if (CollectionUtils.isEmpty(measureConditions)) {
       return Mono.empty();
     }
 
-    List<MeasureCondition> nonNegativeMeasureConditions =
-        measureConditions.stream()
-            .filter(measureCondition -> !(measureCondition instanceof NegativeMeasureCondition))
-            .collect(Collectors.toList());
-
-    List<DocumentaryMeasureCondition> documentaryMeasureConditions =
-        nonNegativeMeasureConditions.stream()
-            .filter(DocumentaryMeasureCondition.class::isInstance)
-            .map(DocumentaryMeasureCondition.class::cast)
-            .collect(Collectors.toList());
-
-    List<MeasureCondition> thresholdOptions =
-        nonNegativeMeasureConditions.stream()
-            .filter(ThresholdMeasureCondition.class::isInstance)
-            .collect(Collectors.toList());
+    List<MeasureCondition> nonThresholdOptions = new ArrayList<>();
+    MeasureCondition thresholdOption = null;
+    for (MeasureCondition measureCondition : measureConditions) {
+      if (measureCondition.getMeasureConditionType() == MeasureConditionType.NEGATIVE) {
+        continue;
+      }
+      if (StringUtils.hasLength(measureCondition.getDocumentCode())) {
+        nonThresholdOptions.add(measureCondition);
+      } else {
+        thresholdOption = measureCondition;
+      }
+    }
 
     List<Mono<MeasureOption>> measureOptionsList =
-        convertToMeasureOptions(documentaryMeasureConditions, thresholdOptions, tradeType, locale);
+        convertToMeasureOptions(nonThresholdOptions, thresholdOption, destinationUkCountry);
 
     return Flux.fromIterable(measureOptionsList)
         .flatMapSequential(Function.identity())
@@ -90,52 +83,41 @@ public class SingleMeasureOptionHandler {
   }
 
   private List<Mono<MeasureOption>> convertToMeasureOptions(
-      List<DocumentaryMeasureCondition> nonThresholdConditions,
-      List<MeasureCondition> thresholdConditions,
-      TradeType tradeType,
-      Locale locale) {
-    List<DocumentaryMeasureCondition> documentaryMeasureConditions =
-        new ArrayList<>(nonThresholdConditions);
-    documentaryMeasureConditions.sort(
-        DOCUMENT_TYPE_COMPARATOR.thenComparing(DOCUMENT_CODE_COMPARATOR));
+      List<MeasureCondition> nonThresholdConditions,
+      MeasureCondition thresholdCondition,
+      UkCountry destinationUkCountry) {
+    List<MeasureCondition> measureConditions = new ArrayList<>(nonThresholdConditions);
+    measureConditions.sort(DOCUMENT_TYPE_COMPARATOR.thenComparing(DOCUMENT_CODE_COMPARATOR));
     long totalNumberOfCertificates =
-        documentaryMeasureConditions.stream()
+        measureConditions.stream()
             .filter(mc -> MeasureConditionType.CERTIFICATE.equals(mc.getMeasureConditionType()))
             .count();
 
-    thresholdConditions.sort(Comparator.comparing(MeasureCondition::getMeasureConditionKey));
-
-    List<MeasureCondition> measureConditions = new ArrayList<>(documentaryMeasureConditions);
-    measureConditions.addAll(thresholdConditions);
+    Optional.ofNullable(thresholdCondition).ifPresent(measureConditions::add);
 
     return measureConditions.stream()
         .map(
             measureCondition ->
                 this.convertToMeasureOption(
-                    measureCondition, totalNumberOfCertificates, tradeType, locale))
+                    measureCondition, totalNumberOfCertificates, destinationUkCountry))
         .collect(Collectors.toList());
   }
 
   Mono<MeasureOption> convertToMeasureOption(
       MeasureCondition measureCondition,
       long totalNumberOfCertificates,
-      TradeType tradeType,
-      Locale locale) {
+      UkCountry destinationUkCountry) {
+    var locale = AppConfig.LOCALE;
     switch (measureCondition.getMeasureConditionType()) {
       case THRESHOLD:
         try {
-          return Mono.just(
-              ThresholdMeasureOption.builder()
-                  .threshold((ThresholdMeasureCondition) measureCondition)
-                  .locale(locale)
-                  .build());
-        } catch (IllegalArgumentException illegalArgumentException) {
+          return Mono.just(ThresholdMeasureOption.builder().threshold(measureCondition).build());
+        } catch (IllegalArgumentException illegalArgumentException){
           log.warn("Threshold measure condition could not be built", illegalArgumentException);
         }
         return Mono.empty();
       case CERTIFICATE:
-        return getDocumentCodeDescription(
-                (DocumentaryMeasureCondition) measureCondition, tradeType, locale)
+        return getDocumentCodeDescription(measureCondition, destinationUkCountry, locale)
             .map(
                 dcd ->
                     DocumentCodeMeasureOption.builder()
@@ -143,46 +125,44 @@ public class SingleMeasureOptionHandler {
                         .documentCodeDescription(dcd)
                         .build());
       case EXCEPTION:
-        return getDocumentCodeDescription(
-                (DocumentaryMeasureCondition) measureCondition, tradeType, locale)
+        return getDocumentCodeDescription(measureCondition, destinationUkCountry, locale)
             .map(
                 dcd ->
                     ExceptionMeasureOption.exceptionMeasureOptionBuilder()
                         .documentCodeDescription(dcd)
                         .build());
-      default:
-        return Mono.empty();
     }
+    return Mono.empty();
   }
 
   protected Mono<List<DocumentCodeDescription>> getDocumentCodeDescriptionsByMeasureConditions(
       List<DocumentCodeDescription> listOfDocumentCodeDescriptions,
-      List<DocumentaryMeasureCondition> measureConditions) {
+      List<MeasureCondition> measureConditions) {
     return Mono.just(
-        measureConditions.stream()
-            .map(
-                mc ->
-                    listOfDocumentCodeDescriptions.stream()
-                        .filter(dcd -> dcd.getDocumentCode().equals(mc.getDocumentCode()))
-                        .findFirst()
-                        .orElseGet(
-                            () ->
-                                DocumentCodeDescription.builder()
-                                    .documentCode(mc.getDocumentCode())
-                                    .descriptionOverlay(mc.getDescription())
-                                    .build()))
-            .collect(Collectors.toList()));
+            measureConditions.stream()
+                .map(
+                    mc ->
+                        listOfDocumentCodeDescriptions.stream()
+                            .filter(dcd -> dcd.getDocumentCode().equals(mc.getDocumentCode()))
+                            .findFirst()
+                            .orElseGet(
+                                () ->
+                                    DocumentCodeDescription.builder()
+                                        .documentCode(mc.getDocumentCode())
+                                        .descriptionOverlay(mc.getRequirement())
+                                        .build()))
+                .collect(Collectors.toList()));
   }
 
   protected Mono<List<DocumentCodeDescription>> getDocumentCodeDescriptions(
-      List<DocumentaryMeasureCondition> measureConditions, TradeType tradeType, Locale locale) {
-    return documentCodeDescriptionRepository
-        .findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
+      List<MeasureCondition> measureConditions, UkCountry destinationUkCountry, Locale locale) {
+    return documentCodeDescriptionContentRepo
+        .findByDocumentCodeInAndLocaleAndPublished(
             measureConditions.stream()
-                .map(DocumentaryMeasureCondition::getDocumentCode)
+                .map(MeasureCondition::getDocumentCode)
                 .collect(Collectors.toList()),
-            tradeType,
-            locale)
+            locale, true)
+        .filter(dcd -> dcd.getDestinationCountryRestrictions().contains(destinationUkCountry))
         .collectList()
         .flatMap(dcd -> getDocumentCodeDescriptionsByMeasureConditions(dcd, measureConditions))
         .defaultIfEmpty(
@@ -191,14 +171,14 @@ public class SingleMeasureOptionHandler {
                     mc ->
                         DocumentCodeDescription.builder()
                             .documentCode(mc.getDocumentCode())
-                            .descriptionOverlay(mc.getDescription())
+                            .descriptionOverlay(mc.getRequirement())
                             .build())
                 .collect(Collectors.toList()));
   }
 
   protected Mono<DocumentCodeDescription> getDocumentCodeDescription(
-      DocumentaryMeasureCondition measureCondition, TradeType tradeType, Locale locale) {
-    return getDocumentCodeDescriptions(List.of(measureCondition), tradeType, locale)
+      MeasureCondition measureCondition, UkCountry destinationUkCountry, Locale locale) {
+    return getDocumentCodeDescriptions(List.of(measureCondition), destinationUkCountry, locale)
         .map(descriptionsList -> descriptionsList.get(0));
   }
 }

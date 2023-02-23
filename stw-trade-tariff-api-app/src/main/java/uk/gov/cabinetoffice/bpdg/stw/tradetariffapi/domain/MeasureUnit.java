@@ -14,373 +14,144 @@
 
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain;
 
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureUnit.Type.VOLUME;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureUnit.Type.WEIGHT;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureUnit.Type.UNIT;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 public enum MeasureUnit {
-  ASV("has a percentage by volume of",
-      "%",
-      "%",
-      "tbc",
-      "tbc",
-      "tbc",
-      UNIT),
-  CCT("has a carrying capacity of",
-      "metric tonne",
-      "metric tonnes",
-      "tbc",
-      "tbc",
-      "tbc",
-      UNIT),
-  CEN("consists of",
-      "00 items",
-      "00 items",
-      "tbc",
-      "tbc",
-      "tbc",
-      UNIT),
-  CTM("boasts",
-      "carat (one metric carat = 2 x 10$-$4kg)",
-      "carats (one metric carat = 2 x 10$-$4kg)",
-      "tbc",
-      "tbc",
-      "tbc",
-      UNIT),
-  DAP("weigh",
-      "decatonne (10 tonnes), corrected according to polarisation",
-      "decatonnes (10 tonnes), corrected according to polarisation",
-      "tbc",
-      "tbc",
-      "tbc",
-      WEIGHT),
-  DHS("weigh",
-      "kilogram of dihydrostreptomycin",
-      "kilograms of dihydrostreptomycin",
-      "tbc",
-      "tbc",
-      "tbc",
-      WEIGHT),
-  DTN("weigh",
-      "hectokilogram (100 kilograms)",
-      "hectokilograms (100 kilograms)",
-      "tbc",
-      "tbc",
-      "tbc",
-      WEIGHT),
-  EUR("is valued at",
-      "Euro",
-      "Euros",
-      "tbc",
-      "tbc",
-      "tbc",
-      UNIT),
-  GFI("weigh",
-      "gram of fissile isotopes",
-      "grams of fissile isotopes",
-      "tbc",
-      "tbc",
-      "tbc",
-      WEIGHT),
-  GP1("is produced in",
-      "unit",
-      "units",
-      "tbc",
-      "tbc",
-      "tbc",
-      UNIT),
-  GRM("weigh",
-      "gram",
-      "grams",
-      "tbc",
-      "tbc",
-      "tbc",
-      WEIGHT),
-  GRT("weigh",
-      "gross tonnage",
-      "gross tonnage",
-      "tbc",
-      "tbc",
-      "tbc",
-      WEIGHT),
-  HLT("is",
-      "hectolitre (100 litres)",
-      "hectolitres (100 litres)",
-      "tbc",
-      "tbc",
-      "tbc",
-      VOLUME),
-  HMT("measures",
-      "hectometre (100 metres)",
-      "hectometres (100 metres)",
-      "tbc",
-      "tbc",
-      "tbc",
-      UNIT),
-  KAC("weigh",
-      "kilogram net of acesulfame potassium",
-      "kilograms net of acesulfame potassium",
-      "tbc",
-      "tbc",
-      "tbc",
-      WEIGHT),
-  KCC("weigh",
-      "kilogram of choline chloride",
-      "kilograms of choline chloride",
-      "tbc",
-      "tbc",
-      "tbc",
-      WEIGHT),
-  KCL("weigh",
-      "tonne of potassium chloride",
-      "tonnes of potassium chloride",
-      "tbc",
-      "tbc",
-      "tbc",
-      WEIGHT),
-  KGM("weigh",
-      "kilogram",
-      "kilograms",
-      "tbc",
-      "tbc",
-      "tbc",
-      WEIGHT),
-  NO_UNIT_CODE("the unit is",
-    "" ,
-    "",
+  ASV("%vol", "has a percentage by volume of", "%", "tbc", "tbc"),
+  CCT(
+    "Carrying capacity in metric tonnes",
+    "has a carrying capacity of",
+    "metric tonnes",
     "tbc",
-    "",
-    "",
-    UNIT),
+    "tbc"),
+  CEN("Hundred items", "consists of", "00 items", "tbc", "tbc"),
+  CTM(
+    "Carats (one metric carat = 2 x 10$-$4kg)",
+    "boasts",
+    "carats (one metric carat = 2 x 10$-$4kg)",
+    "tbc",
+    "tbc"),
+  DAP(
+    "Decatonne, corrected according to polarisation",
+    "weighs",
+    "decatonnes (10 tonnes), corrected according to polarisation",
+    "tbc",
+    "tbc"),
+  DHS(
+    "Kilogram of dihydrostreptomycin",
+    "weighs",
+    "Kilograms of dihydrostreptomycin",
+    "tbc",
+    "tbc"),
+  DTN("Hectokilogram", "weighs", "hectokilograms (100 kilograms)", "tbc", "tbc"),
+  EUR("Euro (used for statistical surveillance)", "is valued at", "Euros", "tbc", "tbc"),
+  GFI("Gram of fissile isotopes", "weighs", "grammes of fissile isotopes", "tbc", "tbc"),
+  GP1("Gross Production", "is produced in", "units", "tbc", "tbc"),
+  GRM("Gram", "weighs", "grammes", "tbc", "tbc"),
+  GRT("Gross tonnage", "weighs", "gross tonnage", "tbc", "tbc"),
+  HLT("Hectolitre", "is", "hectolitres (100 litres)", "tbc", "tbc"),
+  HMT("Hectometre", "measures", "hectometres (100 metres)", "tbc", "tbc"),
+  KAC(
+    "Kilogram net of acesulfame potassium",
+    "weighs",
+    "kilograms net of acesulfame potassium",
+    "tbc",
+    "tbc"),
+  KCC("Kilogram of choline chloride", "weighs", "kilograms of choline chloride", "tbc", "tbc"),
+  KCL("Tonne of potassium chloride", "weighs", "tonnes of potassium chloride", "tbc", "tbc"),
+  KGM("Kilogram", "weighs", "kilograms", "tbc", "tbc"),
+  KLT("1000 litres", "is", "kilolitres (1000 litres)", "tbc", "tbc"),
+  KMA("Kilogram of methylamines", "weighs", "kilograms of methylamines", "tbc", "tbc"),
+  KMT("Kilometre", "measures", "kilometres", "tbc", "tbc"),
+  KNI("Kilogram of nitrogen", "weighs", "kilograms of nitrogen", "tbc", "tbc"),
+  KNS("Kilogram of hydrogen peroxide", "weighs", "kilograms of hydrogen peroxide", "tbc", "tbc"),
+  KPH(
+    "Kilogram of potassium hydroxide (caustic potash)",
+    "weighs",
+    "kilograms of potassium hydroxide",
+    "tbc",
+    "tbc"),
+  KPO("Kilogram of potassium oxide", "weighs", "kilograms of potassium oxide", "tbc", "tbc"),
+  KPP(
+    "Kilogram of diphosphorus pentaoxide",
+    "weighs",
+    "kilograms of diphosphorus pentaoxide",
+    "tbc",
+    "tbc"),
+  KSD("Kilogram of substance 90 % dry", "weighs", "kilograms of substance 90% dry", "tbc", "tbc"),
+  KSH(
+    "Kilogram of sodium hydroxide (caustic soda)",
+    "weighs",
+    "kilograms of sodium hydroxide",
+    "tbc",
+    "tbc"),
+  KUR("Kilogram of uranium", "weighs", "kilograms of uranium", "tbc", "tbc"),
+  LPA("Litre pure (100%) alcohol", "is", "litres of pure alcohol", "tbc", "tbc"),
+  LTR("Litre", "is", "litres", "tbc", "tbc"),
+  MIL("1000 items", "consists of", "000 items", "tbc", "tbc"),
+  MPR("1000 pairs (used for statistical surveillance)", "consists of", "000 pairs", "tbc", "tbc"),
+  MTK("Square metre", "measures", "square metres", "tbc", "tbc"),
+  MTQ("Cubic meter", "measures", "cubic metres", "tbc", "tbc"),
+  MTR("Metre", "measures", "metres", "tbc", "tbc"),
+  MWH("1000 kilowatt hours", "has a kilowatt hours value of", "000 kilowatt hours", "tbc", "tbc"),
+  NAR("Number of items", "consists of", "items", "tbc", "tbc"),
+  NCL("Number of cells", "consists of", "cells", "tbc", "tbc"),
+  NPR("Number of pairs", "consists of", "pairs", "tbc", "tbc"),
+  TJO(
+    "Terajoule (gross calorific value)",
+    "has a gross calorific value of",
+    "terajoules",
+    "tbc",
+    "tbc"),
+  TNE("Tonne", "weighs", "tonnes", "tbc", "tbc"),
+  WAT("Number of Watt", "has a wattage of", "watts", "tbc", "tbc");
 
-  KLT("is",
-      "kilolitre (1000 litres)",
-      "kilolitres (1000 litres)",
-      "tbc",
-      "tbc",
-      "tbc",
-      VOLUME),
-  KMA("weigh",
-      "kilogram of methylamines",
-      "kilograms of methylamines",
-      "tbc",
-      "tbc",
-      "tbc",
-      WEIGHT),
-  KMT("measures",
-      "kilometre",
-      "kilometres",
-      "tbc",
-      "tbc",
-      "tbc",
-      UNIT),
-  KNI("weigh",
-      "kilogram of nitrogen",
-      "kilograms of nitrogen",
-      "tbc",
-      "tbc",
-      "tbc",
-      WEIGHT),
-  KNS("weigh",
-      "kilogram of hydrogen peroxide",
-      "kilograms of hydrogen peroxide",
-      "tbc",
-      "tbc",
-      "tbc",
-      WEIGHT),
-  KPH("weigh",
-      "kilogram of potassium hydroxide",
-      "kilograms of potassium hydroxide",
-      "tbc",
-      "tbc",
-      "tbc",
-      WEIGHT),
-  KPO("weigh",
-      "kilogram of potassium oxide",
-      "kilograms of potassium oxide",
-      "tbc",
-      "tbc",
-      "tbc",
-      WEIGHT),
-  KPP("weigh",
-      "kilogram of diphosphorus pentaoxide",
-      "kilograms of diphosphorus pentaoxide",
-      "tbc",
-      "tbc",
-      "tbc",
-      WEIGHT),
-  KSD("weigh",
-      "kilogram of substance 90% dry",
-      "kilograms of substance 90% dry",
-      "tbc",
-      "tbc",
-      "tbc",
-      WEIGHT),
-  KSH("weigh",
-      "kilogram of sodium hydroxide",
-      "kilograms of sodium hydroxide",
-      "tbc",
-      "tbc",
-      "tbc",
-      WEIGHT),
-  KUR("weigh",
-      "kilogram of uranium",
-      "kilograms of uranium",
-      "tbc",
-      "tbc",
-      "tbc",
-      WEIGHT),
-  LPA("is",
-      "litre of pure alcohol",
-      "litres of pure alcohol",
-      "tbc",
-      "tbc",
-      "tbc",
-      VOLUME),
-  LTR("is",
-      "litre",
-      "litres",
-      "tbc",
-      "tbc",
-      "tbc",
-      VOLUME),
-  MIL("consists of",
-      "000 items",
-      "000 items",
-      "tbc",
-      "tbc",
-      "tbc",
-      UNIT),
-  MPR("consists of",
-      "000 pairs",
-      "000 pairs",
-      "tbc",
-      "tbc",
-      "tbc",
-      UNIT),
-  MTK("measures",
-      "square metre",
-      "square metres",
-      "tbc",
-      "tbc",
-      "tbc",
-      UNIT),
-  MTQ("measures",
-      "cubic metre",
-      "cubic metres",
-      "tbc",
-      "tbc",
-      "tbc",
-      UNIT),
-  MTR("measures",
-      "metre",
-      "metres",
-      "tbc",
-      "tbc",
-      "tbc",
-      UNIT),
-  MWH("has a kilowatt hours value of",
-      "000 kilowatt hours",
-      "000 kilowatt hours",
-      "tbc",
-      "tbc",
-      "tbc",
-      UNIT),
-  NAR("consists of",
-      "item",
-      "items",
-      "tbc",
-      "tbc",
-      "tbc",
-      UNIT),
-  NCL("consists of",
-      "cell",
-      "cells",
-      "tbc",
-      "tbc",
-      "tbc",
-      UNIT),
-  NPR("consists of",
-      "pair",
-      "pairs",
-      "tbc",
-      "tbc",
-      "tbc",
-      UNIT),
-  TJO("has a gross calorific value of",
-      "terajoule",
-      "terajoules",
-      "tbc",
-      "tbc",
-      "tbc",
-      UNIT),
-  TNE("weigh",
-      "tonne",
-      "tonnes",
-      "tbc",
-      "tbc",
-      "tbc",
-      WEIGHT),
-  WAT(
-      "has a wattage of",
-      "watt",
-      "watts",
-      "tbc",
-      "tbc",
-      "tbc",
-      UNIT);
+  private static Map<String, MeasureUnit> measureUnitMap =
+    Collections.unmodifiableMap(initialiseMeasureUnitMap());
 
-  public enum Type {
-    WEIGHT, VOLUME, UNIT
+  private static Map<String, MeasureUnit> initialiseMeasureUnitMap() {
+    Map<String, MeasureUnit> measureUnitMap = new HashMap<>();
+    for (MeasureUnit measureUnit : MeasureUnit.values()) {
+      measureUnitMap.put(measureUnit.tradeTariffAbbr, measureUnit);
+    }
+    return measureUnitMap;
   }
-
-  private final String englishVerb;
-  private final String welshVerb;
-  private final String englishUnitSingular;
-  private final String englishUnitPlural;
-  private final String welshUnitSingular;
-  private final String welshUnitPlural;
-  private final Type type;
 
   MeasureUnit(
-      String englishVerb,
-      String englishUnitSingular,
-      String englishUnitPlural,
-      String welshVerb,
-      String welshUnitSingular,
-      String welshUnitPlural,
-      Type type) {
+    String tradeTariffAbbr,
+    String englishVerb,
+    String englishUnit,
+    String welshVerb,
+    String welshUnit) {
+    this.tradeTariffAbbr = tradeTariffAbbr;
     this.englishVerb = englishVerb;
-    this.englishUnitSingular = englishUnitSingular;
-    this.englishUnitPlural = englishUnitPlural;
+    this.englishUnit = englishUnit;
     this.welshVerb = welshVerb;
-    this.welshUnitSingular = welshUnitSingular;
-    this.welshUnitPlural = welshUnitPlural;
-    this.type = type;
+    this.welshUnit = welshUnit;
   }
 
+  private final String tradeTariffAbbr;
+  private final String englishVerb;
+  private final String welshVerb;
+  private final String englishUnit;
+  private final String welshUnit;
 
-
-
-  public boolean isWeightBased(){
-    return type == WEIGHT;
-  }
-
-  public boolean isVolumeBased(){
-    return type == VOLUME;
-  }
-
-  public boolean isUnitBased(){
-    return type == UNIT;
+  public static MeasureUnit getMeasureUnit(String tradeTariffAbbr) {
+    return Optional.ofNullable(measureUnitMap.get(tradeTariffAbbr))
+      .orElseThrow(
+        () ->
+          new IllegalArgumentException(
+            String.format("Measure unit '%s' not handled", tradeTariffAbbr)));
   }
 
   public String getVerb(Locale locale) {
     return locale == Locale.EN ? englishVerb : welshVerb;
   }
 
-  public String getUnit(Locale locale, float quantity) {
-    return locale == Locale.EN
-        ? quantity > 1 ? englishUnitPlural : englishUnitSingular
-        : quantity > 1 ? welshUnitPlural : welshUnitSingular;
+  public String getUnit(Locale locale) {
+    return locale == Locale.EN ? englishUnit : welshUnit;
   }
 }

@@ -31,5 +31,6 @@ public class Prohibition implements RestrictiveMeasure {
   String measureTypeSeries;
   String legalAct;
   String description;
-  @Default RestrictiveMeasureType measureType = RestrictiveMeasureType.PROHIBITIVE;
+  @Default
+  RestrictiveMeasureType measureType = RestrictiveMeasureType.PROHIBITIVE;
 }

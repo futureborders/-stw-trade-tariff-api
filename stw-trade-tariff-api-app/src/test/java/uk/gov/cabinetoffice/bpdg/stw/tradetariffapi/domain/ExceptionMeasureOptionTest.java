@@ -24,38 +24,41 @@ class ExceptionMeasureOptionTest {
 
   @Test
   void shouldSetAllFields() {
+    Integer id = 100;
     String documentCode = "C055";
     String descriptionOverlay = "Your goods are for scientific purposes.";
 
-    ExceptionMeasureOption exceptionMeasureOption =
-        ExceptionMeasureOption.exceptionMeasureOptionBuilder()
-            .documentCodeDescription(
-                DocumentCodeDescription.builder()
-                    .documentCode(documentCode)
-                    .descriptionOverlay(descriptionOverlay)
-                    .build())
-            .build();
+    MeasureOption exceptionMeasureOption =
+      ExceptionMeasureOption.exceptionMeasureOptionBuilder()
+        .documentCodeDescription(
+          DocumentCodeDescription.builder()
+            .id(id)
+            .documentCode(documentCode)
+            .descriptionOverlay(descriptionOverlay)
+            .build())
+        .build();
 
     SoftAssertions.assertSoftly(
-        softly -> {
-          softly
-              .assertThat(exceptionMeasureOption.getType())
-              .isEqualTo(MeasureOptionType.EXCEPTION);
-          softly.assertThat(exceptionMeasureOption.getCertificateCode()).isEqualTo(documentCode);
-          softly
-              .assertThat(exceptionMeasureOption.getDescriptionOverlay())
-              .isEqualTo("If your goods are for scientific purposes, then your goods are exempt.");
-        });
+      softly -> {
+        softly
+          .assertThat(exceptionMeasureOption.getType())
+          .isEqualTo(MeasureOptionType.EXCEPTION);
+        softly.assertThat(exceptionMeasureOption.getId()).isEqualTo(String.valueOf(id));
+        softly.assertThat(exceptionMeasureOption.getCertificateCode()).isEqualTo(documentCode);
+        softly
+          .assertThat(exceptionMeasureOption.getDescriptionOverlay())
+          .isEqualTo("If your goods are for scientific purposes, then your goods are exempt.");
+      });
   }
 
   @Test
   void shouldNotDecorateExceptionDescriptionWhenDoesNotStartWith_Your() {
     String descriptionOverlay = "If your goods are not organic, you may need to show proof.";
     ExceptionMeasureOption exceptionMeasureOption =
-        ExceptionMeasureOption.exceptionMeasureOptionBuilder()
-            .documentCodeDescription(
-                DocumentCodeDescription.builder().descriptionOverlay(descriptionOverlay).build())
-            .build();
+      ExceptionMeasureOption.exceptionMeasureOptionBuilder()
+        .documentCodeDescription(
+          DocumentCodeDescription.builder().descriptionOverlay(descriptionOverlay).build())
+        .build();
 
     assertThat(exceptionMeasureOption.getDescriptionOverlay()).isEqualTo(descriptionOverlay);
   }

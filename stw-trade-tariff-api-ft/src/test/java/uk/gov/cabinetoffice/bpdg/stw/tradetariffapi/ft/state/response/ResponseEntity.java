@@ -19,13 +19,15 @@ import lombok.Value;
 
 @Value
 public class ResponseEntity {
-  int status;
-  String payload;
-  Map<String, String> headers;
+    int status;
+    String payload;
+    Map<String, String> headers;
 
-  public ResponseEntity(int status, String payload, Map<String, String> headers) {
-    this.status = status;
-    this.payload = payload;
-    this.headers = headers;
-  }
+    public ResponseEntity(int status, String payload, Map<String, String> headers) {
+        this.status = status;
+        this.payload = payload;
+        this.headers = headers;
+    }
 }
+
+

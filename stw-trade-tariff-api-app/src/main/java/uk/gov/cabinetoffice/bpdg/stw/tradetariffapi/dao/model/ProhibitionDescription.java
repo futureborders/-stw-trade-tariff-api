@@ -19,6 +19,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
 
@@ -26,11 +28,15 @@ import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Table("prohibition_descriptions")
 public class ProhibitionDescription {
 
+  @Id
+  private Integer id;
   private String legalAct;
   private String originCountry;
   private String description;
   private Locale locale;
   private List<TradeType> applicableTradeTypes;
+  private boolean published;
 }

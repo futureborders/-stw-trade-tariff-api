@@ -14,8 +14,7 @@
 
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain;
 
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ThresholdMeasureOption.PRICE_DESCRIPTION_START;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ThresholdMeasureOption.WEIGHT_VOLUME_DESCRIPTION_START;
+import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ThresholdMeasureOption.THRESHOLD_MEASURE_OPTION_START_DESCRIPTION;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
@@ -25,13 +24,13 @@ import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.model.DocumentCodeDescri
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ExceptionAndThresholdMeasureOption extends DocumentCodeMeasureOption
-    implements MeasureOption {
+  implements MeasureOption {
 
   private final ThresholdMeasureOption threshold;
 
   @Builder(builderMethodName = "exceptionAndThresholdBuilder")
   public ExceptionAndThresholdMeasureOption(
-      @NonNull DocumentCodeDescription exception, ThresholdMeasureOption thresholdMeasure) {
+    @NonNull DocumentCodeDescription exception, ThresholdMeasureOption thresholdMeasure) {
     super(exception, 0);
     this.threshold = thresholdMeasure;
     this.type = MeasureOptionType.THRESHOLD_CERTIFICATE;
@@ -39,13 +38,10 @@ public class ExceptionAndThresholdMeasureOption extends DocumentCodeMeasureOptio
 
   @Override
   public String getDescriptionOverlay() {
-    String thresholdDescription = threshold.getDescriptionOverlay();
-    return StringUtils.replace(StringUtils.replaceOnceIgnoreCase(
-            StringUtils.removeEndIgnoreCase(descriptionOverlay, "."), "Your", "If your")
-        + " and "
-        + (StringUtils.startsWithIgnoreCase(thresholdDescription, WEIGHT_VOLUME_DESCRIPTION_START)
-            ? StringUtils.removeStartIgnoreCase(
-                thresholdDescription, WEIGHT_VOLUME_DESCRIPTION_START)
-            : StringUtils.removeStartIgnoreCase(thresholdDescription, PRICE_DESCRIPTION_START)),"\n,", ",");
+    return StringUtils.replaceOnceIgnoreCase(
+      StringUtils.removeEndIgnoreCase(descriptionOverlay, "."), "Your", "If your")
+      + " and "
+      + StringUtils.removeStartIgnoreCase(
+      threshold.getDescriptionOverlay(), THRESHOLD_MEASURE_OPTION_START_DESCRIPTION);
   }
 }

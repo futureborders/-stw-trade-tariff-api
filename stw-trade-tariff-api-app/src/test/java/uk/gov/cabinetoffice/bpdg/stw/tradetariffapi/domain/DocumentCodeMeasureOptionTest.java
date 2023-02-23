@@ -27,85 +27,91 @@ class DocumentCodeMeasureOptionTest {
   @Test
   void shouldReturnNullWhenDescriptionIsNull() {
     DocumentCodeMeasureOption documentCodeMeasureOption =
-        DocumentCodeMeasureOption.builder()
-            .documentCodeDescription(DocumentCodeDescription.builder().documentCode("C055").build())
-            .totalNumberOfCertificates(1)
-            .build();
+      DocumentCodeMeasureOption.builder()
+        .documentCodeDescription(
+          DocumentCodeDescription.builder()
+            .documentCode("C055")
+            .build())
+        .totalNumberOfCertificates(1)
+        .build();
 
-    assertThat(documentCodeMeasureOption.getDescriptionOverlay()).isNull();
+    assertThat(documentCodeMeasureOption.getDescriptionOverlay())
+      .isNull();
   }
 
   @Test
   void shouldReturnOriginalDescriptionWhenTotalCertificatesIsOne() {
     DocumentCodeMeasureOption documentCodeMeasureOption =
-        DocumentCodeMeasureOption.builder()
-            .documentCodeDescription(
-                DocumentCodeDescription.builder()
-                    .descriptionOverlay("You need this document.")
-                    .documentCode("C055")
-                    .build())
-            .totalNumberOfCertificates(1)
-            .build();
+      DocumentCodeMeasureOption.builder()
+        .documentCodeDescription(
+          DocumentCodeDescription.builder()
+            .descriptionOverlay("You need this document.")
+            .documentCode("C055")
+            .build())
+        .totalNumberOfCertificates(1)
+        .build();
 
     assertThat(documentCodeMeasureOption.getDescriptionOverlay())
-        .isEqualTo("You need this document.");
+      .isEqualTo("You need this document.");
   }
 
   @ParameterizedTest
   @ValueSource(strings = {"You need this document.", "you need this document."})
   void shouldReturnDecoratedDescriptionWhenTotalCertificatesIsMoreThanOne(
-      String originalDescription) {
+    String originalDescription) {
     DocumentCodeMeasureOption documentCodeMeasureOption =
-        DocumentCodeMeasureOption.builder()
-            .documentCodeDescription(
-                DocumentCodeDescription.builder()
-                    .descriptionOverlay(originalDescription)
-                    .documentCode("C055")
-                    .build())
-            .totalNumberOfCertificates(2)
-            .build();
+      DocumentCodeMeasureOption.builder()
+        .documentCodeDescription(
+          DocumentCodeDescription.builder()
+            .descriptionOverlay(originalDescription)
+            .documentCode("C055")
+            .build())
+        .totalNumberOfCertificates(2)
+        .build();
 
     assertThat(documentCodeMeasureOption.getDescriptionOverlay())
-        .isEqualTo("Check if you need this document.");
+      .isEqualTo("Check if you need this document.");
   }
 
   @ParameterizedTest
   @ValueSource(ints = {1, 2})
   void shouldNotDecorateWhenDescriptionDoesNotStartWith_You_need(int totalCertificates) {
     DocumentCodeMeasureOption documentCodeMeasureOption =
-        DocumentCodeMeasureOption.builder()
-            .documentCodeDescription(
-                DocumentCodeDescription.builder()
-                    .descriptionOverlay("Your goods are for scientific purposes.")
-                    .documentCode("C055")
-                    .build())
-            .totalNumberOfCertificates(totalCertificates)
-            .build();
+      DocumentCodeMeasureOption.builder()
+        .documentCodeDescription(
+          DocumentCodeDescription.builder()
+            .descriptionOverlay("Your goods are for scientific purposes.")
+            .documentCode("C055")
+            .build())
+        .totalNumberOfCertificates(totalCertificates)
+        .build();
 
     assertThat(documentCodeMeasureOption.getDescriptionOverlay())
-        .isEqualTo("Your goods are for scientific purposes.");
+      .isEqualTo("Your goods are for scientific purposes.");
   }
 
   @Test
   void shouldReturnAllFields() {
+    Integer id = 100;
     String documentCode = "C055";
 
-    DocumentCodeMeasureOption documentCodeMeasureOption =
-        DocumentCodeMeasureOption.builder()
-            .documentCodeDescription(
-                DocumentCodeDescription.builder()
-                    .documentCode(documentCode)
-                    .descriptionOverlay("Your goods are for scientific purposes.")
-                    .build())
-            .totalNumberOfCertificates(1)
-            .build();
+    MeasureOption documentCodeMeasureOption =
+      DocumentCodeMeasureOption.builder()
+        .documentCodeDescription(
+          DocumentCodeDescription.builder()
+            .id(id)
+            .documentCode(documentCode)
+            .descriptionOverlay("Your goods are for scientific purposes.")
+            .build())
+        .totalNumberOfCertificates(1)
+        .build();
 
     SoftAssertions.assertSoftly(
-        softly -> {
-          softly
-              .assertThat(documentCodeMeasureOption.getType())
-              .isEqualTo(MeasureOptionType.CERTIFICATE);
-          softly.assertThat(documentCodeMeasureOption.getCertificateCode()).isEqualTo(documentCode);
-        });
+      softly -> {
+        softly.assertThat(documentCodeMeasureOption.getType())
+          .isEqualTo(MeasureOptionType.CERTIFICATE);
+        softly.assertThat(documentCodeMeasureOption.getId()).isEqualTo(String.valueOf(id));
+        softly.assertThat(documentCodeMeasureOption.getCertificateCode()).isEqualTo(documentCode);
+      });
   }
 }

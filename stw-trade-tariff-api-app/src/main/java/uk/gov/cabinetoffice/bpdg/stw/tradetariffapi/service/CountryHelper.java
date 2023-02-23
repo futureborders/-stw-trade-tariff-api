@@ -19,13 +19,15 @@ import java.util.List;
 class CountryHelper {
 
   private static final List<String> EU_CODE_LIST =
-      List.of(
-          "AT", "BE", "BG", "CZ", "DK", "DE", "EE", "IE", "EL", "ES", "FI", "FR", "HR", "IT", "CY",
-          "LV", "LT", "LU", "HU", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK");
+    List
+      .of("AT", "BE", "BG", "CZ", "DK", "DE", "EE", "IE", "EL", "ES", "FI", "FR", "HR", "IT", "CY",
+        "LV", "LT", "LU", "HU", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK");
 
-  private CountryHelper() {}
+  private CountryHelper() {
+  }
 
   public static boolean isEUCountry(String countryCode) {
     return EU_CODE_LIST.contains(countryCode);
   }
+
 }

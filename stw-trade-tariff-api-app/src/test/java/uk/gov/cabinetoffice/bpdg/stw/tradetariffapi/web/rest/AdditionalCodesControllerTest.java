@@ -14,7 +14,6 @@
 
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.web.rest;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -335,57 +334,6 @@ class AdditionalCodesControllerTest {
           .isEqualTo("Origin country HK is not a valid UK country");
     }
 
-    @Test
-    void shouldReturnErrorIfInvalidDateFormat() {
-      webTestClient
-        .get()
-        .uri(createRequest(commodityCode, TradeType.IMPORT, "CN", "GB", "09-10-2022"))
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectBody()
-        .jsonPath("$.validationErrors.length()")
-        .isEqualTo(1)
-        .jsonPath("$.validationErrors[0].fieldName")
-        .isEqualTo("tradeDate")
-        .jsonPath("$.validationErrors[0].message")
-        .isEqualTo("Text '09-10-2022' could not be parsed at index 0");
-    }
-
-    @Test
-    void shouldReturnErrorIfInvalidCommodityCode() {
-      webTestClient
-        .get()
-        .uri(createRequest("1212812182182812", TradeType.IMPORT, "CN", "GB", "2022-10-09"))
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectBody()
-        .jsonPath("$.validationErrors.length()")
-        .isEqualTo(1)
-        .jsonPath("$.validationErrors[0].fieldName")
-        .isEqualTo("commodityCode")
-        .jsonPath("$.validationErrors[0].message")
-        .isEqualTo("must match \"^\\d{8}|\\d{10}$\"");
-    }
-
-    @Test
-    void shouldReturnErrorIfNullTradeType() {
-      webTestClient
-        .get()
-        .uri(createRequest("1212812182182812", null, "CN", "GB", "2022-10-09"))
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectBody()
-        .jsonPath("$.validationErrors.length()")
-        .isEqualTo(2)
-        .jsonPath("$.validationErrors[*].message").value((List messages)->
-           assertThat(messages).containsExactlyInAnyOrder("must match \"^\\d{8}|\\d{10}$\"","must not be null")
-          );
-
-    }
-
     private Function<UriBuilder, URI> createRequest(
         String commodityCode,
         TradeType tradeType,
@@ -413,25 +361,6 @@ class AdditionalCodesControllerTest {
                         "tradeDate", String.format("%tY-%tm-%td", tradeDate, tradeDate, tradeDate))
                     .build()
                 : uriBuilder.build();
-      };
-    }
-
-    private Function<UriBuilder, URI> createRequest(
-      String commodityCode,
-      TradeType tradeType,
-      String originCountry,
-      String destinationCountry,
-      String tradeDate) {
-      return builder -> {
-        UriBuilder uriBuilder =
-          builder
-            .path(
-              String.format(CONTEXT_ROOT + "/commodities/%s/additional-codes", commodityCode))
-            .queryParam("tradeType", tradeType)
-            .queryParam("originCountry", originCountry)
-            .queryParam("destinationCountry", destinationCountry)
-            .queryParam("tradeDate",tradeDate);
-        return uriBuilder.build();
       };
     }
   }

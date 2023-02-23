@@ -39,9 +39,11 @@ import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
 @ExtendWith(MockitoExtension.class)
 class ProhibitionContentServiceTest {
 
-  @Mock private ProhibitionContentRepository prohibitionContentRepository;
+  @Mock
+  private ProhibitionContentRepository prohibitionContentRepository;
 
-  @InjectMocks private ProhibitionContentService prohibitionContentService;
+  @InjectMocks
+  private ProhibitionContentService prohibitionContentService;
 
   @Test
   @SneakyThrows
@@ -72,10 +74,8 @@ class ProhibitionContentServiceTest {
                 .legalActId("A1907951")
                 .applicableTradeTypes(List.of(TradeType.EXPORT))
                 .build());
-    String exportsDescription =
-        "Prohibitions and restrictions enforced by customs on goods custom - exports";
-    String importsDescription =
-        "Prohibitions and restrictions enforced by customs on goods - imports";
+    String exportsDescription = "Prohibitions and restrictions enforced by customs on goods custom - exports";
+    String importsDescription = "Prohibitions and restrictions enforced by customs on goods - imports";
     String description = "Prohibitions and restrictions enforced by customs on goods";
     when(prohibitionContentRepository.findAll())
         .thenReturn(
@@ -171,40 +171,40 @@ class ProhibitionContentServiceTest {
     Locale en = Locale.EN;
     TradeType tradeType = TradeType.IMPORT;
     List<Measure> measures =
-        List.of(
-            Measure.builder()
-                .measureType(
-                    MeasureType.builder()
-                        .id("730")
-                        .seriesId("A")
-                        .description("Import control of organic products")
-                        .build())
-                .measureConditions(List.of())
-                .legalActId("A1907950")
-                .applicableTradeTypes(List.of(tradeType))
-                .build());
+      List.of(
+        Measure.builder()
+          .measureType(
+            MeasureType.builder()
+              .id("730")
+              .seriesId("A")
+              .description("Import control of organic products")
+              .build())
+          .measureConditions(List.of())
+          .legalActId("A1907950")
+          .applicableTradeTypes(List.of(tradeType))
+          .build());
     String description = "Prohibitions and restrictions enforced by customs on goods custom";
     when(prohibitionContentRepository.findAll())
-        .thenReturn(
-            Flux.just(
-                ProhibitionDescription.builder()
-                    .applicableTradeTypes(List.of(TradeType.IMPORT))
-                    .legalAct("A1907950")
-                    .originCountry("TR")
-                    .description(description)
-                    .locale(en)
-                    .build(),
-                ProhibitionDescription.builder()
-                    .applicableTradeTypes(List.of(TradeType.IMPORT))
-                    .legalAct("A1907950")
-                    .description("Prohibitions and restrictions enforced by customs on goods")
-                    .locale(en)
-                    .build()));
+      .thenReturn(
+        Flux.just(
+          ProhibitionDescription.builder()
+            .applicableTradeTypes(List.of(TradeType.IMPORT))
+            .legalAct("A1907950")
+            .originCountry("TR")
+            .description(description)
+            .locale(en)
+            .build(),
+          ProhibitionDescription.builder()
+            .applicableTradeTypes(List.of(TradeType.IMPORT))
+            .legalAct("A1907950")
+            .description("Prohibitions and restrictions enforced by customs on goods")
+            .locale(en)
+            .build()));
     prohibitionContentService.initializeProhibitionContent();
 
     // when
     Mono<List<Prohibition>> prohibitionsMono =
-        prohibitionContentService.getProhibitions(measures, "TR", en, tradeType);
+      prohibitionContentService.getProhibitions(measures, "TR", en, tradeType);
 
     // then
     StepVerifier.create(prohibitionsMono)
@@ -235,67 +235,67 @@ class ProhibitionContentServiceTest {
 
     TradeType tradeType = TradeType.IMPORT;
     List<Measure> measures =
-        List.of(
-            Measure.builder()
-                .measureType(
-                    MeasureType.builder()
-                        .id("730")
-                        .seriesId("A")
-                        .description("Import control of organic products")
-                        .build())
-                .measureConditions(List.of())
-                .legalActId("A1907950")
-                .applicableTradeTypes(List.of(tradeType))
-                .build());
+      List.of(
+        Measure.builder()
+          .measureType(
+            MeasureType.builder()
+              .id("730")
+              .seriesId("A")
+              .description("Import control of organic products")
+              .build())
+          .measureConditions(List.of())
+          .legalActId("A1907950")
+          .applicableTradeTypes(List.of(tradeType))
+          .build());
     String description = "Prohibitions and restrictions enforced by customs on goods custom";
     when(prohibitionContentRepository.findAll())
-        .thenReturn(
-            Flux.just(
-                ProhibitionDescription.builder()
-                    .applicableTradeTypes(List.of(TradeType.IMPORT))
-                    .legalAct("A1907950")
-                    .originCountry("TR")
-                    .description("some description")
-                    .locale(Locale.EN)
-                    .build(),
-                ProhibitionDescription.builder()
-                    .applicableTradeTypes(List.of(TradeType.IMPORT))
-                    .legalAct("A1907950")
-                    .originCountry("TR")
-                    .description(description)
-                    .locale(Locale.CY)
-                    .build(),
-                ProhibitionDescription.builder()
-                    .applicableTradeTypes(List.of(TradeType.IMPORT))
-                    .legalAct("A1907950")
-                    .description("Prohibitions and restrictions enforced by customs on goods")
-                    .locale(Locale.EN)
-                    .build()));
+      .thenReturn(
+        Flux.just(
+          ProhibitionDescription.builder()
+            .applicableTradeTypes(List.of(TradeType.IMPORT))
+            .legalAct("A1907950")
+            .originCountry("TR")
+            .description("some description")
+            .locale(Locale.EN)
+            .build(),
+          ProhibitionDescription.builder()
+            .applicableTradeTypes(List.of(TradeType.IMPORT))
+            .legalAct("A1907950")
+            .originCountry("TR")
+            .description(description)
+            .locale(Locale.CY)
+            .build(),
+          ProhibitionDescription.builder()
+            .applicableTradeTypes(List.of(TradeType.IMPORT))
+            .legalAct("A1907950")
+            .description("Prohibitions and restrictions enforced by customs on goods")
+            .locale(Locale.EN)
+            .build()));
     prohibitionContentService.initializeProhibitionContent();
 
     // when
     Mono<List<Prohibition>> prohibitionsMono =
-        prohibitionContentService.getProhibitions(measures, "TR", cy, tradeType);
+      prohibitionContentService.getProhibitions(measures, "TR", cy, tradeType);
 
     // then
     StepVerifier.create(prohibitionsMono)
-        .expectNextMatches(
-            prohibitions -> {
-              assertThat(prohibitions).isNotEmpty();
-              assertThat(prohibitions).hasSize(1);
-              assertThat(prohibitions.get(0))
-                  .isEqualTo(
-                      Prohibition.builder()
-                          .description(description)
-                          .legalAct("A1907950")
-                          .id("730")
-                          .measureTypeId("730")
-                          .measureTypeSeries("A")
-                          .measureType(PROHIBITIVE)
-                          .build());
-              return true;
-            })
-        .verifyComplete();
+      .expectNextMatches(
+        prohibitions -> {
+          assertThat(prohibitions).isNotEmpty();
+          assertThat(prohibitions).hasSize(1);
+          assertThat(prohibitions.get(0))
+              .isEqualTo(
+                  Prohibition.builder()
+                      .description(description)
+                      .legalAct("A1907950")
+                      .id("730")
+                      .measureTypeId("730")
+                      .measureTypeSeries("A")
+                      .measureType(PROHIBITIVE)
+                      .build());
+          return true;
+        })
+      .verifyComplete();
   }
 
   @Test
@@ -306,109 +306,110 @@ class ProhibitionContentServiceTest {
 
     TradeType tradeType = TradeType.IMPORT;
     List<Measure> measures =
-        List.of(
-            Measure.builder()
-                .measureType(
-                    MeasureType.builder()
-                        .id("730")
-                        .seriesId("A")
-                        .description("Import control of organic products")
-                        .build())
-                .measureConditions(List.of())
-                .legalActId("A1907950")
-                .applicableTradeTypes(List.of(tradeType))
-                .build());
+      List.of(
+        Measure.builder()
+          .measureType(
+            MeasureType.builder()
+              .id("730")
+              .seriesId("A")
+              .description("Import control of organic products")
+              .build())
+          .measureConditions(List.of())
+          .legalActId("A1907950")
+          .applicableTradeTypes(List.of(tradeType))
+          .build());
     String description = "Prohibitions and restrictions enforced by customs on goods";
     when(prohibitionContentRepository.findAll())
-        .thenReturn(
-            Flux.just(
-                ProhibitionDescription.builder()
-                    .applicableTradeTypes(List.of(TradeType.IMPORT))
-                    .legalAct("A1907950")
-                    .description(description)
-                    .locale(en)
-                    .build()));
+      .thenReturn(
+        Flux.just(
+          ProhibitionDescription.builder()
+            .applicableTradeTypes(List.of(TradeType.IMPORT))
+            .legalAct("A1907950")
+            .description(description)
+            .locale(en)
+            .build()));
     prohibitionContentService.initializeProhibitionContent();
 
     // when
     Mono<List<Prohibition>> prohibitionsMono =
-        prohibitionContentService.getProhibitions(measures, "TR", en, tradeType);
+      prohibitionContentService.getProhibitions(measures, "TR", en, tradeType);
 
     // then
     StepVerifier.create(prohibitionsMono)
-        .expectNextMatches(
-            prohibitions -> {
-              assertThat(prohibitions).isNotEmpty();
-              assertThat(prohibitions).hasSize(1);
-              assertThat(prohibitions.get(0))
-                  .isEqualTo(
-                      Prohibition.builder()
-                          .description(description)
-                          .legalAct("A1907950")
-                          .id("730")
-                          .measureTypeId("730")
-                          .measureTypeSeries("A")
-                          .measureType(PROHIBITIVE)
-                          .build());
-              return true;
-            })
-        .verifyComplete();
+      .expectNextMatches(
+        prohibitions -> {
+          assertThat(prohibitions).isNotEmpty();
+          assertThat(prohibitions).hasSize(1);
+          assertThat(prohibitions.get(0))
+              .isEqualTo(
+                  Prohibition.builder()
+                      .description(description)
+                      .legalAct("A1907950")
+                      .id("730")
+                      .measureTypeId("730")
+                      .measureTypeSeries("A")
+                      .measureType(PROHIBITIVE)
+                      .build());
+          return true;
+        })
+      .verifyComplete();
   }
 
   @Test
   @SneakyThrows
-  void shouldReturnDefaultProhibitionDescriptionWhenNoDefaultDescriptionIsSetUpForLegalAct() {
+  void
+  shouldReturnDefaultProhibitionDescriptionWhenNoDefaultDescriptionIsSetUpForLegalAct() {
     // given
     Locale en = Locale.EN;
 
     TradeType tradeType = TradeType.IMPORT;
     List<Measure> measures =
-        List.of(
-            Measure.builder()
-                .measureType(
-                    MeasureType.builder()
-                        .id("730")
-                        .seriesId("A")
-                        .description("Import control of organic products")
-                        .build())
-                .measureConditions(List.of())
-                .legalActId("A1907950")
-                .applicableTradeTypes(List.of(tradeType))
-                .build());
+      List.of(
+        Measure.builder()
+          .measureType(
+            MeasureType.builder()
+              .id("730")
+              .seriesId("A")
+              .description("Import control of organic products")
+              .build())
+          .measureConditions(List.of())
+          .legalActId("A1907950")
+          .applicableTradeTypes(List.of(tradeType))
+          .build());
     when(prohibitionContentRepository.findAll())
-        .thenReturn(
-            Flux.just(
-                ProhibitionDescription.builder()
-                    .applicableTradeTypes(List.of(TradeType.IMPORT))
-                    .legalAct("F1907950")
-                    .description("a description")
-                    .locale(en)
-                    .build()));
+      .thenReturn(
+        Flux.just(
+          ProhibitionDescription.builder()
+            .applicableTradeTypes(List.of(TradeType.IMPORT))
+            .legalAct("F1907950")
+            .description("a description")
+            .locale(en)
+            .build()));
     prohibitionContentService.initializeProhibitionContent();
 
     // when
     Mono<List<Prohibition>> prohibitionsMono =
-        prohibitionContentService.getProhibitions(measures, "TR", en, tradeType);
+      prohibitionContentService.getProhibitions(measures, "TR", en, tradeType);
 
     // then
     StepVerifier.create(prohibitionsMono)
-        .expectNextMatches(
-            prohibitions -> {
-              assertThat(prohibitions).isNotEmpty();
-              assertThat(prohibitions).hasSize(1);
-              assertThat(prohibitions.get(0))
-                  .isEqualTo(
-                      Prohibition.builder()
-                          .description(null)
-                          .legalAct("A1907950")
-                          .id("730")
-                          .measureTypeId("730")
-                          .measureTypeSeries("A")
-                          .measureType(PROHIBITIVE)
-                          .build());
-              return true;
-            })
-        .verifyComplete();
+      .expectNextMatches(
+        prohibitions -> {
+          assertThat(prohibitions).isNotEmpty();
+          assertThat(prohibitions).hasSize(1);
+          assertThat(prohibitions.get(0))
+              .isEqualTo(
+                  Prohibition.builder()
+                      .description(null)
+                      .legalAct("A1907950")
+                      .id("730")
+                      .measureTypeId("730")
+                      .measureTypeSeries("A")
+                      .measureType(PROHIBITIVE)
+                      .build());
+          return true;
+        })
+      .verifyComplete();
   }
 
   @Test
@@ -419,44 +420,44 @@ class ProhibitionContentServiceTest {
 
     TradeType tradeType = TradeType.IMPORT;
     List<Measure> measures =
-        List.of(
-            Measure.builder()
-                .measureType(
-                    MeasureType.builder()
-                        .id("730")
-                        .seriesId("A")
-                        .description("Import control of organic products")
-                        .build())
-                .measureConditions(List.of())
-                .legalActId("A1907950")
-                .applicableTradeTypes(List.of(tradeType))
-                .build());
+      List.of(
+        Measure.builder()
+          .measureType(
+            MeasureType.builder()
+              .id("730")
+              .seriesId("A")
+              .description("Import control of organic products")
+              .build())
+          .measureConditions(List.of())
+          .legalActId("A1907950")
+          .applicableTradeTypes(List.of(tradeType))
+          .build());
     when(prohibitionContentRepository.findAll()).thenReturn(Flux.empty());
     prohibitionContentService.initializeProhibitionContent();
 
     // when
     Mono<List<Prohibition>> prohibitionsMono =
-        prohibitionContentService.getProhibitions(measures, "TR", en, tradeType);
+      prohibitionContentService.getProhibitions(measures, "TR", en, tradeType);
 
     // then
     StepVerifier.create(prohibitionsMono)
-        .expectNextMatches(
-            prohibitions -> {
-              assertThat(prohibitions).isNotEmpty();
-              assertThat(prohibitions).hasSize(1);
-              assertThat(prohibitions.get(0))
-                  .isEqualTo(
-                      Prohibition.builder()
-                          .description(null)
-                          .legalAct("A1907950")
-                          .id("730")
-                          .measureTypeId("730")
-                          .measureTypeSeries("A")
-                          .measureType(PROHIBITIVE)
-                          .build());
-              return true;
-            })
-        .verifyComplete();
+      .expectNextMatches(
+        prohibitions -> {
+          assertThat(prohibitions).isNotEmpty();
+          assertThat(prohibitions).hasSize(1);
+          assertThat(prohibitions.get(0))
+              .isEqualTo(
+                  Prohibition.builder()
+                      .description(null)
+                      .legalAct("A1907950")
+                      .id("730")
+                      .measureTypeId("730")
+                      .measureTypeSeries("A")
+                      .measureType(PROHIBITIVE)
+                      .build());
+          return true;
+        })
+      .verifyComplete();
   }
 
   @Test
@@ -468,85 +469,84 @@ class ProhibitionContentServiceTest {
     String measureTypeForA1907950 = "730";
     String legalActA1907950 = "A1907950";
     String descriptionA1907950 =
-        "A1907950 Prohibitions and restrictions enforced by customs on goods";
+      "A1907950 Prohibitions and restrictions enforced by customs on goods";
 
     String measureTypeForF1907950 = "430";
     String legalActF1907950 = "F1907950";
     String descriptionF1907950 =
-        "F1907950 Prohibitions and restrictions enforced by customs on goods";
+      "F1907950 Prohibitions and restrictions enforced by customs on goods";
 
     TradeType tradeType = TradeType.IMPORT;
     List<Measure> measures =
-        List.of(
-            Measure.builder()
-                .measureType(
-                    MeasureType.builder()
-                        .id(measureTypeForA1907950)
-                        .seriesId("A")
-                        .description("Import control of organic products")
-                        .build())
-                .measureConditions(List.of())
-                .legalActId(legalActA1907950)
-                .applicableTradeTypes(List.of(tradeType))
-                .build(),
-            Measure.builder()
-                .measureType(
-                    MeasureType.builder()
-                        .id(measureTypeForF1907950)
-                        .seriesId("A")
-                        .description("Import control of organic products")
-                        .build())
-                .measureConditions(List.of())
-                .legalActId(legalActF1907950)
-                .applicableTradeTypes(List.of(tradeType))
-                .build());
+      List.of(
+        Measure.builder()
+          .measureType(
+            MeasureType.builder()
+              .id(measureTypeForA1907950)
+              .seriesId("A")
+              .description("Import control of organic products")
+              .build())
+          .measureConditions(List.of())
+          .legalActId(legalActA1907950)
+          .applicableTradeTypes(List.of(tradeType))
+          .build(),
+        Measure.builder()
+          .measureType(
+            MeasureType.builder()
+              .id(measureTypeForF1907950)
+              .seriesId("A")
+              .description("Import control of organic products")
+              .build())
+          .measureConditions(List.of())
+          .legalActId(legalActF1907950)
+          .applicableTradeTypes(List.of(tradeType))
+          .build());
     when(prohibitionContentRepository.findAll())
-        .thenReturn(
-            Flux.just(
-                ProhibitionDescription.builder()
-                    .applicableTradeTypes(List.of(TradeType.IMPORT))
-                    .legalAct(legalActA1907950)
-                    .description(descriptionA1907950)
-                    .locale(en)
-                    .build(),
-                ProhibitionDescription.builder()
-                    .applicableTradeTypes(List.of(TradeType.IMPORT))
-                    .legalAct(legalActF1907950)
-                    .description(descriptionF1907950)
-                    .locale(en)
-                    .build()));
+      .thenReturn(
+        Flux.just(
+          ProhibitionDescription.builder()
+            .applicableTradeTypes(List.of(TradeType.IMPORT))
+            .legalAct(legalActA1907950)
+            .description(descriptionA1907950)
+            .locale(en)
+            .build(),
+          ProhibitionDescription.builder()
+            .applicableTradeTypes(List.of(TradeType.IMPORT))
+            .legalAct(legalActF1907950)
+            .description(descriptionF1907950)
+            .locale(en)
+            .build()));
     prohibitionContentService.initializeProhibitionContent();
 
     // when
     Mono<List<Prohibition>> prohibitionsMono =
-        prohibitionContentService.getProhibitions(measures, "TR", en, tradeType);
+      prohibitionContentService.getProhibitions(measures, "TR", en, tradeType);
 
     // then
     StepVerifier.create(prohibitionsMono)
-        .expectNextMatches(
-            prohibitions -> {
-              assertThat(prohibitions).isNotEmpty();
-              assertThat(prohibitions).hasSize(2);
-              assertThat(prohibitions)
-                  .containsExactlyInAnyOrder(
-                      Prohibition.builder()
-                          .description(descriptionA1907950)
-                          .legalAct(legalActA1907950)
-                          .id(measureTypeForA1907950)
-                          .measureTypeId(measureTypeForA1907950)
-                          .measureTypeSeries("A")
-                          .measureType(PROHIBITIVE)
-                          .build(),
-                      Prohibition.builder()
-                          .description(descriptionF1907950)
-                          .legalAct(legalActF1907950)
-                          .id(measureTypeForF1907950)
-                          .measureTypeId(measureTypeForF1907950)
-                          .measureTypeSeries("A")
-                          .measureType(PROHIBITIVE)
-                          .build());
-              return true;
-            })
-        .verifyComplete();
+      .expectNextMatches(
+        prohibitions -> {
+          assertThat(prohibitions).isNotEmpty();
+          assertThat(prohibitions).hasSize(2);
+          assertThat(prohibitions).containsExactlyInAnyOrder(
+              Prohibition.builder()
+                      .description(descriptionA1907950)
+                      .legalAct(legalActA1907950)
+                      .id(measureTypeForA1907950)
+                      .measureTypeId(measureTypeForA1907950)
+                      .measureTypeSeries("A")
+                      .measureType(PROHIBITIVE)
+                      .build(),
+              Prohibition.builder()
+                      .description(descriptionF1907950)
+                      .legalAct(legalActF1907950)
+                      .id(measureTypeForF1907950)
+                      .measureTypeId(measureTypeForF1907950)
+                      .measureTypeSeries("A")
+                      .measureType(PROHIBITIVE)
+                      .build());
+          return true;
+        })
+      .verifyComplete();
   }
 }

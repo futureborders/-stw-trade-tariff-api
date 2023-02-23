@@ -14,13 +14,10 @@
 
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.service.measureoptions;
 
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType.IMPORT;
-
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -29,11 +26,10 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.model.DocumentCodeDescription;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.DocumentCodeMeasureOption;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.DocumentaryMeasureCondition;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureCondition;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureConditionCode;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureOptions;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
 
 @ExtendWith(MockitoExtension.class)
 class MultipleMeasureOptionsHandlerTest {
@@ -42,28 +38,26 @@ class MultipleMeasureOptionsHandlerTest {
 
   @InjectMocks private MultipleMeasureOptionsHandler multipleMeasureOptionsHandler;
 
-  @ParameterizedTest
-  @EnumSource
+  @Test
   @DisplayName("no measures")
-  void shouldReturnEmptyWhenNoMeasuresArePassed(Locale locale) {
-    StepVerifier.create(multipleMeasureOptionsHandler.getMeasureOptions(null, IMPORT, locale))
+  void shouldReturnEmptyWhenNoMeasuresArePassed() {
+    StepVerifier.create(multipleMeasureOptionsHandler.getMeasureOptions(null, UkCountry.GB))
         .verifyComplete();
 
-    StepVerifier.create(multipleMeasureOptionsHandler.getMeasureOptions(List.of(), IMPORT, locale))
+    StepVerifier.create(multipleMeasureOptionsHandler.getMeasureOptions(List.of(), UkCountry.GB))
         .verifyComplete();
   }
 
+  @Test
   @DisplayName("processing multiple measure")
-  @ParameterizedTest
-  @EnumSource(Locale.class)
-  void shouldProcessMultipleMeasures(Locale locale) {
+  void shouldProcessMultipleMeasures() {
     String documentCode1 = "C123";
     String documentCode2 = "C223";
     String documentCode3 = "C323";
 
     MeasureConditionCode bMeasureConditionCode = MeasureConditionCode.B;
     MeasureCondition certificateMeasureConditionWithMeasureConditionB =
-        DocumentaryMeasureCondition.builder()
+        MeasureCondition.builder()
             .id("1000")
             .conditionCode(bMeasureConditionCode)
             .documentCode(documentCode1)
@@ -71,7 +65,7 @@ class MultipleMeasureOptionsHandlerTest {
             .build();
     MeasureConditionCode cMeasureConditionCode = MeasureConditionCode.C;
     MeasureCondition certificateMeasureConditionWithMeasureConditionC =
-        DocumentaryMeasureCondition.builder()
+        MeasureCondition.builder()
             .id("1001")
             .conditionCode(cMeasureConditionCode)
             .documentCode(documentCode2)
@@ -79,13 +73,14 @@ class MultipleMeasureOptionsHandlerTest {
             .build();
     MeasureConditionCode dMeasureConditionCode = MeasureConditionCode.D;
     MeasureCondition certificateMeasureConditionWithMeasureConditionD =
-        DocumentaryMeasureCondition.builder()
+        MeasureCondition.builder()
             .id("1002")
             .conditionCode(dMeasureConditionCode)
             .documentCode(documentCode3)
             .requirement("certificate requirement")
             .build();
 
+    UkCountry destinationCountry = UkCountry.GB;
     MeasureOptions measureOptionForB =
         MeasureOptions.builder()
             .options(
@@ -118,15 +113,15 @@ class MultipleMeasureOptionsHandlerTest {
             .build();
     Mockito.when(
             singleMeasureOptionHandler.getMeasureOption(
-                List.of(certificateMeasureConditionWithMeasureConditionB), IMPORT, locale))
+                List.of(certificateMeasureConditionWithMeasureConditionB), destinationCountry))
         .thenReturn(Mono.just(measureOptionForB));
     Mockito.when(
             singleMeasureOptionHandler.getMeasureOption(
-                List.of(certificateMeasureConditionWithMeasureConditionC), IMPORT, locale))
+                List.of(certificateMeasureConditionWithMeasureConditionC), destinationCountry))
         .thenReturn(Mono.just(measureOptionForC));
     Mockito.when(
             singleMeasureOptionHandler.getMeasureOption(
-                List.of(certificateMeasureConditionWithMeasureConditionD), IMPORT, locale))
+                List.of(certificateMeasureConditionWithMeasureConditionD), destinationCountry))
         .thenReturn(Mono.just(measureOptionForD));
 
     StepVerifier.create(
@@ -135,8 +130,7 @@ class MultipleMeasureOptionsHandlerTest {
                     certificateMeasureConditionWithMeasureConditionB,
                     certificateMeasureConditionWithMeasureConditionC,
                     certificateMeasureConditionWithMeasureConditionD),
-                IMPORT,
-                locale))
+                destinationCountry))
         .expectNext(measureOptionForB, measureOptionForC, measureOptionForD)
         .verifyComplete();
   }

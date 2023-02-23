@@ -1,0 +1,14 @@
+{
+  "documentCodeDescriptions": [
+    {
+      "documentCode": "9111",
+      "descriptionOverlay": "[Read about precursor chemical licensing](https://www.gov.uk/guidance/precursor-chemical-licensing)",
+      "locale": "EN"
+    },
+    {
+      "documentCode": "9100",
+      "descriptionOverlay": "You need an import licence if your **firearms and ammunition** are:\r\n- within either chapter 93 (arms and ammunition) or chapter 97 (works of art, collectors' pieces and antiques) of the UK tariff",
+      "locale": "EN"
+    }
+  ]
+}

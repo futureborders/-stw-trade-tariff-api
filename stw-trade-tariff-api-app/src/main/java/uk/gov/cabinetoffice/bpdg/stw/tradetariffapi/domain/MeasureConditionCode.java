@@ -52,16 +52,16 @@ public enum MeasureConditionCode {
     this.thresholdType = thresholdType;
   }
 
-  public static MeasureConditionCode from(String measureConditionCode) {
-    for (MeasureConditionCode conditionCode : MeasureConditionCode.values()) {
-      if (conditionCode.name().equals(measureConditionCode)) {
+  public ThresholdType getThresholdType() {
+    return thresholdType;
+  }
+
+  public static MeasureConditionCode from(String measureConditionCode){
+    for(MeasureConditionCode conditionCode: MeasureConditionCode.values()){
+      if(conditionCode.name().equals(measureConditionCode)){
         return conditionCode;
       }
     }
     return UNKNOWN;
-  }
-
-  public ThresholdType getThresholdType() {
-    return thresholdType;
   }
 }

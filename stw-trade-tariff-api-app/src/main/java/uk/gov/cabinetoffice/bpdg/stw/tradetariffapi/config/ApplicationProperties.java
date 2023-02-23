@@ -34,7 +34,10 @@ import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.contentclient.ContentApiConf
 @ConfigurationProperties(prefix = "application", ignoreUnknownFields = false)
 public class ApplicationProperties {
 
-  public static final String CONTEXT_ROOT = "/api";
   TradeTariffApiConfig tradeTariffApi;
+  SignpostingContentDbConfig signpostingContentDb;
   ContentApiConfiguration contentApi;
+  String overlayContentSource;
+
+  public static final String CONTEXT_ROOT = "/api";
 }

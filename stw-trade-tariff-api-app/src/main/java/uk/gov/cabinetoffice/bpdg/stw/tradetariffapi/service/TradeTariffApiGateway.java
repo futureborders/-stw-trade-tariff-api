@@ -35,19 +35,21 @@ public class TradeTariffApiGateway {
 
   private final TradeTariffApi tradeTariffApi;
 
-  public Mono<TradeTariffCommodityResponse> getCommodity(
-      String commodityCode, LocalDate dateOfTrade, UkCountry apiCountry) {
+  public Mono<TradeTariffCommodityResponse> getCommodity(String commodityCode, LocalDate dateOfTrade, UkCountry apiCountry) {
 
     final CommoditiesApiVersion commoditiesApiVersion =
         apiCountry == UkCountry.GB
             ? CommoditiesApiVersion.COMMODITIES_GB_V2
             : CommoditiesApiVersion.COMMODITIES_XI_V2;
     return this.tradeTariffApi
-        .getCommodity(commodityCode, dateOfTrade, commoditiesApiVersion)
+        .getCommodity(
+            commodityCode, dateOfTrade, commoditiesApiVersion)
         .flatMap(
             response -> {
               if (response.resultFound() == null || !response.resultFound()) {
-                return Mono.error(new ResourceNotFoundException("Commodity", commodityCode));
+                return Mono.error(
+                    new ResourceNotFoundException(
+                        "Commodity", commodityCode));
               }
               return Mono.just(response);
             });

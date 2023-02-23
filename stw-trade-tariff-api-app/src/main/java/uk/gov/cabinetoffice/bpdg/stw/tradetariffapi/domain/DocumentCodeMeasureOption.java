@@ -29,6 +29,7 @@ import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.model.DocumentCodeDescri
 @NoArgsConstructor
 public class DocumentCodeMeasureOption implements MeasureOption {
 
+  protected String id;
   protected String certificateCode;
   protected MeasureOptionType type = MeasureOptionType.CERTIFICATE;
   protected String descriptionOverlay;
@@ -39,6 +40,10 @@ public class DocumentCodeMeasureOption implements MeasureOption {
   @Builder
   public DocumentCodeMeasureOption(
       @NonNull DocumentCodeDescription documentCodeDescription, long totalNumberOfCertificates) {
+    this.id =
+        documentCodeDescription.getId() != null
+            ? String.valueOf(documentCodeDescription.getId())
+            : null;
     this.descriptionOverlay = documentCodeDescription.getDescriptionOverlay();
     this.certificateCode = documentCodeDescription.getDocumentCode();
     this.totalNumberOfCertificates = totalNumberOfCertificates;

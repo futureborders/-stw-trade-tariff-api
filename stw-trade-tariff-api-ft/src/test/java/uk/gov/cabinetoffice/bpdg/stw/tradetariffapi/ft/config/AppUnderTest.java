@@ -45,8 +45,10 @@ public class AppUnderTest {
   private final String host;
 
   private final Integer port;
-  private final RequestEntity healthRequest;
+
   private CloseableHttpClient httpClient;
+
+  private final RequestEntity healthRequest;
 
   public AppUnderTest(String host, Integer port) {
     this.host = host;
@@ -54,22 +56,18 @@ public class AppUnderTest {
     this.httpClient = HttpClients.createDefault();
 
     healthRequest =
-        new RequestEntity() {
-          @Override
-          public String path() {
-            return "/actuator/probes/readinessState";
-          }
-        };
+      new RequestEntity() {
+        @Override
+        public String path() {
+          return "/actuator/probes/readinessState";
+        }
+      };
   }
 
-  public AppUnderTest(String host, Integer port, CloseableHttpClient httpClient) {
+  public AppUnderTest(String host, Integer port,
+    CloseableHttpClient httpClient) {
     this(host, port);
     this.httpClient = httpClient;
-  }
-
-  private static Map<String, String> headersFrom(HttpResponse response) {
-    return stream(response.getAllHeaders())
-        .collect(Collectors.toMap(Header::getName, Header::getValue));
   }
 
   public ResponseEntity health() {
@@ -80,18 +78,17 @@ public class AppUnderTest {
     try {
       RequestBuilder requestBuilder = RequestBuilder.get();
       int modifiedPort =
-          requestEntity.path().contains("/actuator/probes/readinessState") ? 9000 : port;
-      URI uri =
-          new URIBuilder(requestEntity.path())
-              .setScheme("http")
-              .setHost(host)
-              .setPort(modifiedPort)
-              .build();
+        requestEntity.path().contains("/actuator/probes/readinessState") ? 9000 : port;
+      URI uri = new URIBuilder(requestEntity.path())
+        .setScheme("http")
+        .setHost(host)
+        .setPort(modifiedPort)
+        .build();
       log.info("Sending request to {}", uri);
       requestBuilder.setUri(uri);
       if (requestEntity.hasPayload()) {
         requestBuilder.setEntity(
-            new StringEntity(((PayloadBasedRequestEntity<?>) requestEntity).payload()));
+          new StringEntity(((PayloadBasedRequestEntity<?>) requestEntity).payload()));
       }
       requestEntity.getHeaders().forEach(requestBuilder::addHeader);
 
@@ -116,18 +113,23 @@ public class AppUnderTest {
     int statusCode = response.getStatusLine().getStatusCode();
 
     String payload =
-        Optional.ofNullable(entity)
-            .map(
-                en -> {
-                  try {
-                    return EntityUtils.toString(en);
-                  } catch (IOException ex) {
-                    ex.printStackTrace();
-                    return null;
-                  }
-                })
-            .orElse(null);
+      Optional.ofNullable(entity)
+        .map(
+          en -> {
+            try {
+              return EntityUtils.toString(en);
+            } catch (IOException ex) {
+              ex.printStackTrace();
+              return null;
+            }
+          })
+        .orElse(null);
     EntityUtils.consume(entity);
     return new ResponseEntity(statusCode, payload, headersFrom(response));
+  }
+
+  private static Map<String, String> headersFrom(HttpResponse response) {
+    return stream(response.getAllHeaders())
+      .collect(Collectors.toMap(Header::getName, Header::getValue));
   }
 }

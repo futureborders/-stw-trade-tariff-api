@@ -28,5 +28,7 @@ public class ConditionBasedRestrictiveMeasure implements RestrictiveMeasure {
   String descriptionOverlay;
   String description;
   List<MeasureOptions> measureOptions;
-  @Default RestrictiveMeasureType measureType = RestrictiveMeasureType.RESTRICTIVE;
+  @Default
+  RestrictiveMeasureType measureType = RestrictiveMeasureType.RESTRICTIVE;
+
 }

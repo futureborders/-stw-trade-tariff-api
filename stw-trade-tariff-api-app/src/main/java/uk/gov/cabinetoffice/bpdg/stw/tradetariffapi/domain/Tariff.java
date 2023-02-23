@@ -37,4 +37,5 @@ public class Tariff implements Duty {
   public Optional<Quota> getQuota() {
     return Optional.ofNullable(quota);
   }
+
 }

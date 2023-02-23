@@ -43,10 +43,7 @@ public class TariffAndTaxesService {
       return Mono.just(TariffAndTaxes.builder().duties(List.of()).build());
     }
     return this.tradeTariffApiGateway
-        .getCommodity(
-            tariffAndTaxesRequest.getCommodityCode(),
-            tariffAndTaxesRequest.getImportDate(),
-            tariffAndTaxesRequest.getDestinationCountry())
+        .getCommodity(tariffAndTaxesRequest.getCommodityCode(), tariffAndTaxesRequest.getImportDate(), tariffAndTaxesRequest.getDestinationCountry())
         .flatMap(response -> handleMeasures(response, tariffAndTaxesRequest));
   }
 
@@ -55,14 +52,10 @@ public class TariffAndTaxesService {
       TariffAndTaxesRequest tariffAndTaxesRequest) {
     List<Measure> dutyMeasures =
         measureFilterer.getTaxAndDutyMeasures(
-            measureBuilder.from(
-                tradeTariffCommodityResponse, tariffAndTaxesRequest.getCommodityCode()),
-            tariffAndTaxesRequest.getTradeType(),
-            tariffAndTaxesRequest.getOriginCountry());
+            measureBuilder.from(tradeTariffCommodityResponse), tariffAndTaxesRequest.getTradeType(), tariffAndTaxesRequest.getOriginCountry());
 
     return this.dutyMeasureService
-        .getTariffsAndTaxesMeasures(
-            dutyMeasures, tariffAndTaxesRequest.getTradeType(), tariffAndTaxesRequest.getLocale())
+        .getTariffsAndTaxesMeasures(dutyMeasures, tariffAndTaxesRequest.getDestinationCountry())
         .collectList()
         .map(duties -> TariffAndTaxes.builder().duties(duties).build());
   }

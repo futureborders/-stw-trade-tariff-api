@@ -111,12 +111,12 @@ public class DockerConfigClient {
                                     && container.getNetworkSettings() != null
                                     && container.getNetworkSettings().getNetworks() != null
                                     && container
-                                        .getNetworkSettings()
-                                        .getNetworks()
-                                        .values()
-                                        .stream()
-                                        .anyMatch(
-                                            network -> networkId.equals(network.getNetworkID())))
+                                    .getNetworkSettings()
+                                    .getNetworks()
+                                    .values()
+                                    .stream()
+                                    .anyMatch(
+                                        network -> networkId.equals(network.getNetworkID())))
                         .map(Container::getId)
                         .map(containerId -> inspectContainerIp(networkId, containerId))
                         .findFirst())
@@ -155,7 +155,8 @@ public class DockerConfigClient {
                     containerPorts.stream()
                         .filter(
                             containerPort ->
-                                Objects.equals(containerPort.getPublicPort(), publicPort))
+                                Objects.equals(
+                                    containerPort.getPublicPort(), publicPort))
                         .map(ContainerPort::getPrivatePort)
                         .findFirst())
             .orElseThrow(

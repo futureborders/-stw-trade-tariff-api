@@ -15,33 +15,28 @@
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.service.measureoptions;
 
 import static org.mockito.Mockito.when;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType.IMPORT;
 
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.config.AppConfig;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.model.DocumentCodeDescription;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.repository.DocumentCodeDescriptionRepository;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.DocumentCodeMeasureOption;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.DocumentaryMeasureCondition;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ExceptionMeasureOption;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureCondition;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureConditionCode;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureOptions;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MonetaryUnitCode;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.NegativeMeasureCondition;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.PriceBasedThresholdMeasureCondition;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ThresholdMeasureOption;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.WeightOrVolumeOrUnitBasedThresholdMeasureCondition;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
 
 @ExtendWith(MockitoExtension.class)
 public class SingleMeasureOptionHandlerTest {
@@ -54,9 +49,9 @@ public class SingleMeasureOptionHandlerTest {
   private static final String CERTIFICATE2_DESCRIPTION_IN_DB =
       "You need certificate2 description in DB";
   private static final String CERTIFICATE_DEFAULT_REQUIREMENT = "certificate default requirement";
-  private static final String CERTIFICATE_DEFAULT_DESCRIPTION = "certificate default description";
   private static final String EXCEPTION_DEFAULT_REQUIREMENT = "exception default requirement";
-  private static final String EXCEPTION_DEFAULT_DESCRIPTION = "exception default description";
+  private static final String THRESHOLD_REQUIREMENT =
+      "<span>2.0</span> <abbr title='Kilogram'>kg</abbr>";
 
   @Mock private DocumentCodeDescriptionRepository documentCodeDescriptionRepository;
 
@@ -65,43 +60,40 @@ public class SingleMeasureOptionHandlerTest {
   @Nested
   class GetDocumentCodeMeasureOptions {
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
+    @Test
     @DisplayName("no measures")
-    void shouldReturnEmptyWhenNoMeasuresArePassed(Locale locale) {
-      StepVerifier.create(singleMeasureOptionHandler.getMeasureOption(null, IMPORT, locale))
+    void shouldReturnEmptyWhenNoMeasuresArePassed() {
+      StepVerifier.create(singleMeasureOptionHandler.getMeasureOption(null, UkCountry.GB))
           .verifyComplete();
 
-      StepVerifier.create(singleMeasureOptionHandler.getMeasureOption(List.of(), IMPORT, locale))
+      StepVerifier.create(singleMeasureOptionHandler.getMeasureOption(List.of(), UkCountry.GB))
           .verifyComplete();
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
+    @Test
     @DisplayName("simple measures containing a single certificate")
-    void shouldProcessSimpleMeasuresWithSingleCertificate(Locale locale) {
+    void shouldProcessSimpleMeasuresWithSingleCertificate() {
       MeasureConditionCode measureConditionCode = MeasureConditionCode.A;
       MeasureCondition certificateMeasureCondition =
-          DocumentaryMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
               .documentCode(CERTIFICATE_DOCUMENT_CODE1)
               .requirement(CERTIFICATE_DEFAULT_REQUIREMENT)
-              .description(CERTIFICATE_DEFAULT_DESCRIPTION)
               .build();
 
-      when(documentCodeDescriptionRepository
-              .findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-                  List.of(CERTIFICATE_DOCUMENT_CODE1), IMPORT, locale))
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+              List.of(CERTIFICATE_DOCUMENT_CODE1), AppConfig.LOCALE, true))
           .thenReturn(
               Flux.just(
                   DocumentCodeDescription.builder()
                       .documentCode(CERTIFICATE_DOCUMENT_CODE1)
                       .descriptionOverlay(CERTIFICATE1_DESCRIPTION_IN_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.GB, UkCountry.XI))
                       .build()));
 
       StepVerifier.create(
               singleMeasureOptionHandler.getMeasureOption(
-                  List.of(certificateMeasureCondition), IMPORT, locale))
+                  List.of(certificateMeasureCondition), UkCountry.GB))
           .expectNext(
               MeasureOptions.builder()
                   .options(
@@ -112,56 +104,54 @@ public class SingleMeasureOptionHandlerTest {
                                   DocumentCodeDescription.builder()
                                       .documentCode(CERTIFICATE_DOCUMENT_CODE1)
                                       .descriptionOverlay(CERTIFICATE1_DESCRIPTION_IN_DB)
+                                      .destinationCountryRestrictions(
+                                          Set.of(UkCountry.GB, UkCountry.XI))
                                       .build())
                               .build()))
                   .build())
           .verifyComplete();
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
+    @Test
     @DisplayName("simple measures with multiple certificates")
-    void shouldProcessSimpleMeasuresWithMultipleCertificates(Locale locale) {
+    void shouldProcessSimpleMeasuresWithMultipleCertificates() {
       MeasureConditionCode measureConditionCode = MeasureConditionCode.A;
       MeasureCondition certificateMeasureCondition1 =
-          DocumentaryMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
               .documentCode(CERTIFICATE_DOCUMENT_CODE1)
               .requirement(CERTIFICATE_DEFAULT_REQUIREMENT)
-              .description(CERTIFICATE_DEFAULT_DESCRIPTION)
               .build();
       MeasureCondition certificateMeasureCondition2 =
-          DocumentaryMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
               .documentCode(CERTIFICATE_DOCUMENT_CODE2)
-              .requirement(CERTIFICATE_DEFAULT_REQUIREMENT)
-              .description(CERTIFICATE_DEFAULT_DESCRIPTION)
+              .requirement(CERTIFICATE2_DESCRIPTION_IN_DB)
               .build();
 
-      when(documentCodeDescriptionRepository
-              .findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-                  List.of(CERTIFICATE_DOCUMENT_CODE1), IMPORT, locale))
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+              List.of(CERTIFICATE_DOCUMENT_CODE1), AppConfig.LOCALE, true))
           .thenReturn(
               Flux.just(
                   DocumentCodeDescription.builder()
                       .documentCode(CERTIFICATE_DOCUMENT_CODE1)
                       .descriptionOverlay(CERTIFICATE1_DESCRIPTION_IN_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.GB, UkCountry.XI))
                       .build()));
-      when(documentCodeDescriptionRepository
-              .findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-                  List.of(CERTIFICATE_DOCUMENT_CODE2), IMPORT, locale))
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+              List.of(CERTIFICATE_DOCUMENT_CODE2), AppConfig.LOCALE, true))
           .thenReturn(
               Flux.just(
                   DocumentCodeDescription.builder()
                       .documentCode(CERTIFICATE_DOCUMENT_CODE2)
                       .descriptionOverlay(CERTIFICATE2_DESCRIPTION_IN_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.GB, UkCountry.XI))
                       .build()));
 
       StepVerifier.create(
               singleMeasureOptionHandler.getMeasureOption(
                   List.of(certificateMeasureCondition1, certificateMeasureCondition2),
-                  IMPORT,
-                  locale))
+                  UkCountry.GB))
           .expectNext(
               MeasureOptions.builder()
                   .options(
@@ -172,6 +162,8 @@ public class SingleMeasureOptionHandlerTest {
                                   DocumentCodeDescription.builder()
                                       .documentCode(CERTIFICATE_DOCUMENT_CODE2)
                                       .descriptionOverlay(CERTIFICATE2_DESCRIPTION_IN_DB)
+                                      .destinationCountryRestrictions(
+                                          Set.of(UkCountry.GB, UkCountry.XI))
                                       .build())
                               .build(),
                           DocumentCodeMeasureOption.builder()
@@ -180,56 +172,59 @@ public class SingleMeasureOptionHandlerTest {
                                   DocumentCodeDescription.builder()
                                       .documentCode(CERTIFICATE_DOCUMENT_CODE1)
                                       .descriptionOverlay(CERTIFICATE1_DESCRIPTION_IN_DB)
+                                      .destinationCountryRestrictions(
+                                          Set.of(UkCountry.GB, UkCountry.XI))
                                       .build())
-                              .build()))
+                              .build()
+                          ))
                   .build())
           .verifyComplete();
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
+    @Test
     @DisplayName("simple measures containing an exception")
-    void shouldProcessSimpleMeasuresWithException(Locale locale) {
+    void shouldProcessSimpleMeasuresWithException() {
       MeasureConditionCode measureConditionCode = MeasureConditionCode.A;
       MeasureCondition certificateMeasureCondition =
-          DocumentaryMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
               .documentCode(CERTIFICATE_DOCUMENT_CODE1)
               .requirement(CERTIFICATE_DEFAULT_REQUIREMENT)
-              .description(CERTIFICATE_DEFAULT_DESCRIPTION)
               .build();
       MeasureCondition exceptionMeasureCondition =
-          DocumentaryMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
               .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
               .requirement(EXCEPTION_DEFAULT_REQUIREMENT)
-              .description(EXCEPTION_DEFAULT_DESCRIPTION)
               .build();
       MeasureCondition negativeMeasureCondition =
-          NegativeMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
+              .documentCode("")
               .action("Import/export not allowed after control")
               .build();
 
-      when(documentCodeDescriptionRepository
-              .findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-                  List.of(CERTIFICATE_DOCUMENT_CODE1), IMPORT, locale))
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+              List.of(CERTIFICATE_DOCUMENT_CODE1), AppConfig.LOCALE, true))
           .thenReturn(
               Flux.just(
                   DocumentCodeDescription.builder()
+                      .id(1)
                       .documentCode(CERTIFICATE_DOCUMENT_CODE1)
                       .descriptionOverlay(CERTIFICATE1_DESCRIPTION_IN_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.GB, UkCountry.XI))
                       .build()));
 
-      when(documentCodeDescriptionRepository
-              .findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-                  List.of(EXCEPTION_DOCUMENT_CODE_C084), IMPORT, locale))
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+              List.of(EXCEPTION_DOCUMENT_CODE_C084), AppConfig.LOCALE, true))
           .thenReturn(
               Flux.just(
                   DocumentCodeDescription.builder()
+                      .id(2)
                       .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
                       .descriptionOverlay(
                           "Your goods are intended for scientific purposes, research or diagnostic samples")
+                      .destinationCountryRestrictions(Set.of(UkCountry.GB, UkCountry.XI))
                       .build()));
 
       StepVerifier.create(
@@ -238,8 +233,7 @@ public class SingleMeasureOptionHandlerTest {
                       exceptionMeasureCondition,
                       certificateMeasureCondition,
                       negativeMeasureCondition),
-                  IMPORT,
-                  locale))
+                  UkCountry.GB))
           .expectNext(
               MeasureOptions.builder()
                   .options(
@@ -248,79 +242,69 @@ public class SingleMeasureOptionHandlerTest {
                               .totalNumberOfCertificates(1)
                               .documentCodeDescription(
                                   DocumentCodeDescription.builder()
+                                      .id(1)
                                       .documentCode(CERTIFICATE_DOCUMENT_CODE1)
                                       .descriptionOverlay(CERTIFICATE1_DESCRIPTION_IN_DB)
+                                      .destinationCountryRestrictions(
+                                          Set.of(UkCountry.GB, UkCountry.XI))
                                       .build())
                               .build(),
                           ExceptionMeasureOption.exceptionMeasureOptionBuilder()
                               .documentCodeDescription(
                                   DocumentCodeDescription.builder()
+                                      .id(2)
                                       .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
                                       .descriptionOverlay(
                                           "Your goods are intended for scientific purposes, research or diagnostic samples")
+                                      .destinationCountryRestrictions(
+                                          Set.of(UkCountry.GB, UkCountry.XI))
                                       .build())
                               .build()))
                   .build())
           .verifyComplete();
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    @DisplayName("simple measures containing thresholds")
-    void shouldProcessSimpleMeasuresWithThresholds(Locale locale) {
-      final String thresholdRequirement = "<span>2.0</span> <abbr title='Kilogram'>kg</abbr>";
-      final String conditionAmountDuty = "2.0";
-      final String conditionMeasurementUnitCode = "KGM";
-
+    @Test
+    @DisplayName("simple measures containing an threshold")
+    void shouldProcessSimpleMeasuresWithThreshold() {
       MeasureConditionCode measureConditionCode = MeasureConditionCode.A;
       MeasureCondition certificateMeasureCondition =
-          DocumentaryMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
               .documentCode(CERTIFICATE_DOCUMENT_CODE1)
               .requirement(CERTIFICATE_DEFAULT_REQUIREMENT)
-              .description(CERTIFICATE_DEFAULT_DESCRIPTION)
               .build();
-      MeasureCondition thresholdMeasureCondition1 =
-          WeightOrVolumeOrUnitBasedThresholdMeasureCondition.builder()
+      MeasureCondition thresholdMeasureCondition =
+          MeasureCondition.builder()
               .id("4000")
               .conditionCode(measureConditionCode)
-              .conditionDutyAmount(conditionAmountDuty)
-              .conditionMeasurementUnitCode(conditionMeasurementUnitCode)
-              .requirement(thresholdRequirement)
-              .build();
-      MeasureCondition thresholdMeasureCondition2 =
-          PriceBasedThresholdMeasureCondition.builder()
-              .id("4001")
-              .conditionCode(measureConditionCode)
-              .conditionDutyAmount(conditionAmountDuty)
-              .conditionMonetaryUnitCode(MonetaryUnitCode.GBP.name())
-              .requirement(thresholdRequirement)
+              .requirement(THRESHOLD_REQUIREMENT)
               .build();
       MeasureCondition negativeMeasureCondition =
-          NegativeMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
+              .documentCode("")
               .action("Import/export not allowed after control")
               .build();
 
-      when(documentCodeDescriptionRepository
-              .findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-                  List.of(CERTIFICATE_DOCUMENT_CODE1), IMPORT, locale))
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+              List.of(CERTIFICATE_DOCUMENT_CODE1), AppConfig.LOCALE, true))
           .thenReturn(
               Flux.just(
                   DocumentCodeDescription.builder()
+                      .id(1)
                       .documentCode(CERTIFICATE_DOCUMENT_CODE1)
                       .descriptionOverlay(CERTIFICATE1_DESCRIPTION_IN_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.GB, UkCountry.XI))
                       .build()));
 
       StepVerifier.create(
               singleMeasureOptionHandler.getMeasureOption(
                   List.of(
-                      thresholdMeasureCondition1,
-                      thresholdMeasureCondition2,
+                      thresholdMeasureCondition,
                       certificateMeasureCondition,
                       negativeMeasureCondition),
-                  IMPORT,
-                  locale))
+                  UkCountry.GB))
           .expectNext(
               MeasureOptions.builder()
                   .options(
@@ -329,69 +313,114 @@ public class SingleMeasureOptionHandlerTest {
                               .totalNumberOfCertificates(1)
                               .documentCodeDescription(
                                   DocumentCodeDescription.builder()
+                                      .id(1)
                                       .documentCode(CERTIFICATE_DOCUMENT_CODE1)
                                       .descriptionOverlay(CERTIFICATE1_DESCRIPTION_IN_DB)
+                                      .destinationCountryRestrictions(
+                                          Set.of(UkCountry.GB, UkCountry.XI))
                                       .build())
                               .build(),
                           ThresholdMeasureOption.builder()
                               .threshold(
-                                  WeightOrVolumeOrUnitBasedThresholdMeasureCondition.builder()
-                                      .id("4000")
+                                  MeasureCondition.builder()
+                                      .id("5000")
                                       .conditionCode(measureConditionCode)
-                                      .conditionDutyAmount(conditionAmountDuty)
-                                      .conditionMeasurementUnitCode(conditionMeasurementUnitCode)
-                                      .requirement(thresholdRequirement)
+                                      .requirement(THRESHOLD_REQUIREMENT)
                                       .build())
-                              .locale(locale)
-                              .build(),
-                          ThresholdMeasureOption.builder()
-                              .threshold(
-                                  PriceBasedThresholdMeasureCondition.builder()
-                                      .id("4001")
-                                      .conditionCode(measureConditionCode)
-                                      .conditionDutyAmount(conditionAmountDuty)
-                                      .conditionMonetaryUnitCode(MonetaryUnitCode.GBP.name())
-                                      .requirement(thresholdRequirement)
-                                      .build())
-                              .locale(locale)
                               .build()))
                   .build())
           .verifyComplete();
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    @DisplayName("simple measures with document code descriptions not defined in DB")
-    void shouldUseDocumentCodeDescriptionsInMeasureIfDocumentCodeDescriptionsNotDefinedInDB(Locale locale) {
+    @Test
+    @DisplayName("ignore threshold if it not as expected")
+    void shouldProcessSimpleMeasuresAndIgnoreThresholdIfItIsNotAsExpected() {
       MeasureConditionCode measureConditionCode = MeasureConditionCode.A;
       MeasureCondition certificateMeasureCondition =
-          DocumentaryMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
               .documentCode(CERTIFICATE_DOCUMENT_CODE1)
               .requirement(CERTIFICATE_DEFAULT_REQUIREMENT)
-              .description(CERTIFICATE_DEFAULT_DESCRIPTION)
               .build();
-      MeasureCondition exceptionMeasureCondition =
-          DocumentaryMeasureCondition.builder()
+      MeasureCondition thresholdMeasureCondition =
+          MeasureCondition.builder()
+              .id("4000")
               .conditionCode(measureConditionCode)
-              .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
-              .requirement(EXCEPTION_DEFAULT_REQUIREMENT)
-              .description(EXCEPTION_DEFAULT_DESCRIPTION)
+              .requirement("<span>2.0</span>")
               .build();
       MeasureCondition negativeMeasureCondition =
-          NegativeMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
+              .documentCode("")
               .action("Import/export not allowed after control")
               .build();
 
-      when(documentCodeDescriptionRepository
-              .findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-                  List.of(CERTIFICATE_DOCUMENT_CODE1), IMPORT, locale))
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+          List.of(CERTIFICATE_DOCUMENT_CODE1), AppConfig.LOCALE, true))
+          .thenReturn(
+              Flux.just(
+                  DocumentCodeDescription.builder()
+                      .id(1)
+                      .documentCode(CERTIFICATE_DOCUMENT_CODE1)
+                      .descriptionOverlay(CERTIFICATE1_DESCRIPTION_IN_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.GB, UkCountry.XI))
+                      .build()));
+
+      StepVerifier.create(
+              singleMeasureOptionHandler.getMeasureOption(
+                  List.of(
+                      thresholdMeasureCondition,
+                      certificateMeasureCondition,
+                      negativeMeasureCondition),
+                  UkCountry.GB))
+          .expectNext(
+              MeasureOptions.builder()
+                  .options(
+                      List.of(
+                          DocumentCodeMeasureOption.builder()
+                              .totalNumberOfCertificates(1)
+                              .documentCodeDescription(
+                                  DocumentCodeDescription.builder()
+                                      .id(1)
+                                      .documentCode(CERTIFICATE_DOCUMENT_CODE1)
+                                      .descriptionOverlay(CERTIFICATE1_DESCRIPTION_IN_DB)
+                                      .destinationCountryRestrictions(
+                                          Set.of(UkCountry.GB, UkCountry.XI))
+                                      .build())
+                              .build()))
+                  .build())
+          .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("simple measures with document code descriptions not defined in DB")
+    void shouldUseDocumentCodeDescriptionsInMeasureIfDocumentCodeDescriptionsNotDefinedInDB() {
+      MeasureConditionCode measureConditionCode = MeasureConditionCode.A;
+      MeasureCondition certificateMeasureCondition =
+          MeasureCondition.builder()
+              .conditionCode(measureConditionCode)
+              .documentCode(CERTIFICATE_DOCUMENT_CODE1)
+              .requirement(CERTIFICATE_DEFAULT_REQUIREMENT)
+              .build();
+      MeasureCondition exceptionMeasureCondition =
+          MeasureCondition.builder()
+              .conditionCode(measureConditionCode)
+              .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
+              .requirement(EXCEPTION_DEFAULT_REQUIREMENT)
+              .build();
+      MeasureCondition negativeMeasureCondition =
+          MeasureCondition.builder()
+              .conditionCode(measureConditionCode)
+              .documentCode("")
+              .action("Import/export not allowed after control")
+              .build();
+
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+              List.of(CERTIFICATE_DOCUMENT_CODE1), AppConfig.LOCALE, true))
           .thenReturn(Flux.empty());
 
-      when(documentCodeDescriptionRepository
-              .findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-                  List.of(EXCEPTION_DOCUMENT_CODE_C084), IMPORT, locale))
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+              List.of(EXCEPTION_DOCUMENT_CODE_C084), AppConfig.LOCALE, true))
           .thenReturn(Flux.empty());
 
       StepVerifier.create(
@@ -400,8 +429,7 @@ public class SingleMeasureOptionHandlerTest {
                       exceptionMeasureCondition,
                       certificateMeasureCondition,
                       negativeMeasureCondition),
-                  IMPORT,
-                  locale))
+                  UkCountry.GB))
           .expectNext(
               MeasureOptions.builder()
                   .options(
@@ -411,60 +439,58 @@ public class SingleMeasureOptionHandlerTest {
                               .documentCodeDescription(
                                   DocumentCodeDescription.builder()
                                       .documentCode(CERTIFICATE_DOCUMENT_CODE1)
-                                      .descriptionOverlay(CERTIFICATE_DEFAULT_DESCRIPTION)
+                                      .descriptionOverlay(CERTIFICATE_DEFAULT_REQUIREMENT)
                                       .build())
                               .build(),
                           ExceptionMeasureOption.exceptionMeasureOptionBuilder()
                               .documentCodeDescription(
                                   DocumentCodeDescription.builder()
                                       .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
-                                      .descriptionOverlay(EXCEPTION_DEFAULT_DESCRIPTION)
+                                      .descriptionOverlay(EXCEPTION_DEFAULT_REQUIREMENT)
                                       .build())
                               .build()))
                   .build())
           .verifyComplete();
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
+    @Test
     @DisplayName("simple measures with only some of the document codes defined in DB")
     void
-        shouldUseDocumentCodeDescriptionFromMeasureIfOnlySomeOfThenHaveDocumentCodeDescriptionsDefinedInDB(Locale locale) {
+        shouldUseDocumentCodeDescriptionFromMeasureIfOnlySomeOfThenHaveDocumentCodeDescriptionsDefinedInDB() {
       MeasureConditionCode measureConditionCode = MeasureConditionCode.A;
       MeasureCondition certificateMeasureCondition =
-          DocumentaryMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
               .documentCode(CERTIFICATE_DOCUMENT_CODE1)
               .requirement(CERTIFICATE_DEFAULT_REQUIREMENT)
-              .description(CERTIFICATE_DEFAULT_DESCRIPTION)
               .build();
       MeasureCondition exceptionMeasureCondition =
-          DocumentaryMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
               .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
               .requirement(EXCEPTION_DEFAULT_REQUIREMENT)
-              .description(EXCEPTION_DEFAULT_DESCRIPTION)
               .build();
       MeasureCondition negativeMeasureCondition =
-          NegativeMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
+              .documentCode("")
               .action("Import/export not allowed after control")
               .build();
 
-      when(documentCodeDescriptionRepository
-              .findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-                  List.of(CERTIFICATE_DOCUMENT_CODE1), IMPORT, locale))
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+              List.of(CERTIFICATE_DOCUMENT_CODE1), AppConfig.LOCALE, true))
           .thenReturn(Flux.empty());
 
-      when(documentCodeDescriptionRepository
-              .findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-                  List.of(EXCEPTION_DOCUMENT_CODE_C084), IMPORT, locale))
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+              List.of(EXCEPTION_DOCUMENT_CODE_C084), AppConfig.LOCALE, true))
           .thenReturn(
               Flux.just(
                   DocumentCodeDescription.builder()
+                      .id(2)
                       .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
                       .descriptionOverlay(
                           "Your goods are intended for scientific purposes, research or diagnostic samples")
+                      .destinationCountryRestrictions(Set.of(UkCountry.GB, UkCountry.XI))
                       .build()));
 
       StepVerifier.create(
@@ -473,8 +499,7 @@ public class SingleMeasureOptionHandlerTest {
                       exceptionMeasureCondition,
                       certificateMeasureCondition,
                       negativeMeasureCondition),
-                  IMPORT,
-                  locale))
+                  UkCountry.GB))
           .expectNext(
               MeasureOptions.builder()
                   .options(
@@ -484,149 +509,80 @@ public class SingleMeasureOptionHandlerTest {
                               .documentCodeDescription(
                                   DocumentCodeDescription.builder()
                                       .documentCode(CERTIFICATE_DOCUMENT_CODE1)
-                                      .descriptionOverlay(CERTIFICATE_DEFAULT_DESCRIPTION)
+                                      .descriptionOverlay(CERTIFICATE_DEFAULT_REQUIREMENT)
                                       .build())
                               .build(),
                           ExceptionMeasureOption.exceptionMeasureOptionBuilder()
                               .documentCodeDescription(
                                   DocumentCodeDescription.builder()
+                                      .id(2)
                                       .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
                                       .descriptionOverlay(
                                           "Your goods are intended for scientific purposes, research or diagnostic samples")
+                                      .destinationCountryRestrictions(
+                                          Set.of(UkCountry.GB, UkCountry.XI))
                                       .build())
                               .build()))
                   .build())
           .verifyComplete();
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    @DisplayName("simple measures having document code descriptions defined")
-    void shouldReturnCountrySpecificDocumentCodeDescriptions(Locale locale) {
+    @Test
+    @DisplayName("simple measures having GB and XI document code descriptions defined")
+    void shouldReturnCountrySpecificDocumentCodeDescriptions() {
       MeasureConditionCode measureConditionCode = MeasureConditionCode.A;
       MeasureCondition certificateMeasureCondition =
-          DocumentaryMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
               .documentCode(CERTIFICATE_DOCUMENT_CODE1)
               .requirement(CERTIFICATE_DEFAULT_REQUIREMENT)
-              .description(CERTIFICATE_DEFAULT_DESCRIPTION)
               .build();
       MeasureCondition exceptionMeasureCondition =
-          DocumentaryMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
               .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
               .requirement(EXCEPTION_DEFAULT_REQUIREMENT)
-              .description(EXCEPTION_DEFAULT_DESCRIPTION)
               .build();
       MeasureCondition negativeMeasureCondition =
-          NegativeMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
+              .documentCode("")
               .action("Import/export not allowed after control")
               .build();
 
-      when(documentCodeDescriptionRepository
-              .findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-                  List.of(CERTIFICATE_DOCUMENT_CODE1), IMPORT, locale))
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+              List.of(CERTIFICATE_DOCUMENT_CODE1), AppConfig.LOCALE, true))
           .thenReturn(
               Flux.just(
                   DocumentCodeDescription.builder()
+                      .id(1)
                       .documentCode(CERTIFICATE_DOCUMENT_CODE1)
                       .descriptionOverlay("GB overlay")
-                      .build()));
-
-      when(documentCodeDescriptionRepository
-              .findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-                  List.of(EXCEPTION_DOCUMENT_CODE_C084), IMPORT, locale))
-          .thenReturn(
-              Flux.just(
-                  DocumentCodeDescription.builder()
-                      .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
-                      .descriptionOverlay("GB description")
-                      .build()));
-
-      StepVerifier.create(
-              singleMeasureOptionHandler.getMeasureOption(
-                  List.of(
-                      exceptionMeasureCondition,
-                      certificateMeasureCondition,
-                      negativeMeasureCondition),
-                  IMPORT,
-                  locale))
-          .expectNext(
-              MeasureOptions.builder()
-                  .options(
-                      List.of(
-                          DocumentCodeMeasureOption.builder()
-                              .totalNumberOfCertificates(1)
-                              .documentCodeDescription(
-                                  DocumentCodeDescription.builder()
-                                      .documentCode(CERTIFICATE_DOCUMENT_CODE1)
-                                      .descriptionOverlay("GB overlay")
-                                      .build())
-                              .build(),
-                          ExceptionMeasureOption.exceptionMeasureOptionBuilder()
-                              .documentCodeDescription(
-                                  DocumentCodeDescription.builder()
-                                      .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
-                                      .descriptionOverlay("GB description")
-                                      .build())
-                              .build()))
-                  .build())
-          .verifyComplete();
-    }
-
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    @DisplayName("simple measures having multiple document code descriptions defined")
-    void shouldReturnFirstDocumentCodeDescriptionsIfMultipleFound(Locale locale) {
-      MeasureConditionCode measureConditionCode = MeasureConditionCode.A;
-      MeasureCondition certificateMeasureCondition =
-          DocumentaryMeasureCondition.builder()
-              .conditionCode(measureConditionCode)
-              .documentCode(CERTIFICATE_DOCUMENT_CODE1)
-              .requirement(CERTIFICATE_DEFAULT_REQUIREMENT)
-              .description(CERTIFICATE_DEFAULT_DESCRIPTION)
-              .build();
-      MeasureCondition exceptionMeasureCondition =
-          DocumentaryMeasureCondition.builder()
-              .conditionCode(measureConditionCode)
-              .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
-              .requirement(EXCEPTION_DEFAULT_REQUIREMENT)
-              .description(EXCEPTION_DEFAULT_DESCRIPTION)
-              .build();
-      MeasureCondition negativeMeasureCondition =
-          NegativeMeasureCondition.builder()
-              .conditionCode(measureConditionCode)
-              .action("Import/export not allowed after control")
-              .build();
-
-      when(documentCodeDescriptionRepository
-              .findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-                  List.of(CERTIFICATE_DOCUMENT_CODE1), IMPORT, locale))
-          .thenReturn(
-              Flux.just(
-                  DocumentCodeDescription.builder()
-                      .documentCode(CERTIFICATE_DOCUMENT_CODE1)
-                      .descriptionOverlay(CERTIFICATE1_DESCRIPTION_IN_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.GB))
                       .build(),
                   DocumentCodeDescription.builder()
+                      .id(2)
                       .documentCode(CERTIFICATE_DOCUMENT_CODE1)
-                      .descriptionOverlay("second description")
+                      .descriptionOverlay(CERTIFICATE1_DESCRIPTION_IN_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.XI))
                       .build()));
 
-      when(documentCodeDescriptionRepository
-              .findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-                  List.of(EXCEPTION_DOCUMENT_CODE_C084), IMPORT, locale))
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+              List.of(EXCEPTION_DOCUMENT_CODE_C084), AppConfig.LOCALE, true))
           .thenReturn(
               Flux.just(
                   DocumentCodeDescription.builder()
+                      .id(3)
+                      .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
+                      .descriptionOverlay("GB description")
+                      .destinationCountryRestrictions(Set.of(UkCountry.GB))
+                      .build(),
+                  DocumentCodeDescription.builder()
+                      .id(4)
                       .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
                       .descriptionOverlay(
                           "Your goods are intended for scientific purposes, research or diagnostic samples")
-                      .build(),
-                  DocumentCodeDescription.builder()
-                      .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
-                      .descriptionOverlay("second description")
+                      .destinationCountryRestrictions(Set.of(UkCountry.XI))
                       .build()));
 
       StepVerifier.create(
@@ -635,8 +591,88 @@ public class SingleMeasureOptionHandlerTest {
                       exceptionMeasureCondition,
                       certificateMeasureCondition,
                       negativeMeasureCondition),
-                  IMPORT,
-                  locale))
+                  UkCountry.XI))
+          .expectNext(
+              MeasureOptions.builder()
+                  .options(
+                      List.of(
+                          DocumentCodeMeasureOption.builder()
+                              .totalNumberOfCertificates(1)
+                              .documentCodeDescription(
+                                  DocumentCodeDescription.builder()
+                                      .id(2)
+                                      .documentCode(CERTIFICATE_DOCUMENT_CODE1)
+                                      .descriptionOverlay(CERTIFICATE1_DESCRIPTION_IN_DB)
+                                      .destinationCountryRestrictions(Set.of(UkCountry.XI))
+                                      .build())
+                              .build(),
+                          ExceptionMeasureOption.exceptionMeasureOptionBuilder()
+                              .documentCodeDescription(
+                                  DocumentCodeDescription.builder()
+                                      .id(4)
+                                      .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
+                                      .descriptionOverlay(
+                                          "Your goods are intended for scientific purposes, research or diagnostic samples")
+                                      .destinationCountryRestrictions(Set.of(UkCountry.XI))
+                                      .build())
+                              .build()))
+                  .build())
+          .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("simple measures without country specific document code descriptions defined")
+    void
+        shouldUseMeasureDocumentCodeDescriptionWhenNoDocumentCodeDescriptionFoundForSpecificCountry() {
+      MeasureConditionCode measureConditionCode = MeasureConditionCode.A;
+      MeasureCondition certificateMeasureCondition =
+          MeasureCondition.builder()
+              .conditionCode(measureConditionCode)
+              .documentCode(CERTIFICATE_DOCUMENT_CODE1)
+              .requirement(CERTIFICATE_DEFAULT_REQUIREMENT)
+              .build();
+      MeasureCondition exceptionMeasureCondition =
+          MeasureCondition.builder()
+              .conditionCode(measureConditionCode)
+              .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
+              .requirement(EXCEPTION_DEFAULT_REQUIREMENT)
+              .build();
+      MeasureCondition negativeMeasureCondition =
+          MeasureCondition.builder()
+              .conditionCode(measureConditionCode)
+              .documentCode("")
+              .action("Import/export not allowed after control")
+              .build();
+
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+              List.of(CERTIFICATE_DOCUMENT_CODE1), AppConfig.LOCALE, true))
+          .thenReturn(
+              Flux.just(
+                  DocumentCodeDescription.builder()
+                      .id(1)
+                      .documentCode(CERTIFICATE_DOCUMENT_CODE1)
+                      .descriptionOverlay("GB overlay")
+                      .destinationCountryRestrictions(Set.of(UkCountry.GB))
+                      .build()));
+
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+              List.of(EXCEPTION_DOCUMENT_CODE_C084), AppConfig.LOCALE, true))
+          .thenReturn(
+              Flux.just(
+                  DocumentCodeDescription.builder()
+                      .id(3)
+                      .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
+                      .descriptionOverlay("GB description")
+                      .destinationCountryRestrictions(Set.of(UkCountry.GB))
+                      .build()));
+
+      StepVerifier.create(
+              singleMeasureOptionHandler.getMeasureOption(
+                  List.of(
+                      exceptionMeasureCondition,
+                      certificateMeasureCondition,
+                      negativeMeasureCondition),
+                  UkCountry.XI))
           .expectNext(
               MeasureOptions.builder()
                   .options(
@@ -646,77 +682,160 @@ public class SingleMeasureOptionHandlerTest {
                               .documentCodeDescription(
                                   DocumentCodeDescription.builder()
                                       .documentCode(CERTIFICATE_DOCUMENT_CODE1)
-                                      .descriptionOverlay(CERTIFICATE1_DESCRIPTION_IN_DB)
+                                      .descriptionOverlay(CERTIFICATE_DEFAULT_REQUIREMENT)
                                       .build())
                               .build(),
                           ExceptionMeasureOption.exceptionMeasureOptionBuilder()
                               .documentCodeDescription(
                                   DocumentCodeDescription.builder()
                                       .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
-                                      .descriptionOverlay(
-                                          "Your goods are intended for scientific purposes, research or diagnostic samples")
+                                      .descriptionOverlay(EXCEPTION_DEFAULT_REQUIREMENT)
                                       .build())
                               .build()))
                   .build())
           .verifyComplete();
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    @DisplayName(
-        "should order document codes on measure options based on type and if same type then on condition code")
-    void shouldOrderDocumentCodes(Locale locale) {
+    @Test
+    @DisplayName("simple measures having multiple document code descriptions defined")
+    void shouldReturnFirstDocumentCodeDescriptionsIfMultipleFound() {
+      MeasureConditionCode measureConditionCode = MeasureConditionCode.A;
+      MeasureCondition certificateMeasureCondition =
+          MeasureCondition.builder()
+              .conditionCode(measureConditionCode)
+              .documentCode(CERTIFICATE_DOCUMENT_CODE1)
+              .requirement(CERTIFICATE_DEFAULT_REQUIREMENT)
+              .build();
+      MeasureCondition exceptionMeasureCondition =
+          MeasureCondition.builder()
+              .conditionCode(measureConditionCode)
+              .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
+              .requirement(EXCEPTION_DEFAULT_REQUIREMENT)
+              .build();
+      MeasureCondition negativeMeasureCondition =
+          MeasureCondition.builder()
+              .conditionCode(measureConditionCode)
+              .documentCode("")
+              .action("Import/export not allowed after control")
+              .build();
+
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+              List.of(CERTIFICATE_DOCUMENT_CODE1), AppConfig.LOCALE, true))
+          .thenReturn(
+              Flux.just(
+                  DocumentCodeDescription.builder()
+                      .id(1)
+                      .documentCode(CERTIFICATE_DOCUMENT_CODE1)
+                      .descriptionOverlay(CERTIFICATE1_DESCRIPTION_IN_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.XI))
+                      .build(),
+                  DocumentCodeDescription.builder()
+                      .id(2)
+                      .documentCode(CERTIFICATE_DOCUMENT_CODE1)
+                      .descriptionOverlay("second description")
+                      .destinationCountryRestrictions(Set.of(UkCountry.XI))
+                      .build()));
+
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+              List.of(EXCEPTION_DOCUMENT_CODE_C084), AppConfig.LOCALE, true))
+          .thenReturn(
+              Flux.just(
+                  DocumentCodeDescription.builder()
+                      .id(3)
+                      .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
+                      .descriptionOverlay(
+                          "Your goods are intended for scientific purposes, research or diagnostic samples")
+                      .destinationCountryRestrictions(Set.of(UkCountry.XI))
+                      .build(),
+                  DocumentCodeDescription.builder()
+                      .id(4)
+                      .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
+                      .descriptionOverlay("second description")
+                      .destinationCountryRestrictions(Set.of(UkCountry.XI))
+                      .build()));
+
+      StepVerifier.create(
+              singleMeasureOptionHandler.getMeasureOption(
+                  List.of(
+                      exceptionMeasureCondition,
+                      certificateMeasureCondition,
+                      negativeMeasureCondition),
+                  UkCountry.XI))
+          .expectNext(
+              MeasureOptions.builder()
+                  .options(
+                      List.of(
+                          DocumentCodeMeasureOption.builder()
+                              .totalNumberOfCertificates(1)
+                              .documentCodeDescription(
+                                  DocumentCodeDescription.builder()
+                                      .id(1)
+                                      .documentCode(CERTIFICATE_DOCUMENT_CODE1)
+                                      .descriptionOverlay(CERTIFICATE1_DESCRIPTION_IN_DB)
+                                      .destinationCountryRestrictions(Set.of(UkCountry.XI))
+                                      .build())
+                              .build(),
+                          ExceptionMeasureOption.exceptionMeasureOptionBuilder()
+                              .documentCodeDescription(
+                                  DocumentCodeDescription.builder()
+                                      .id(3)
+                                      .documentCode(EXCEPTION_DOCUMENT_CODE_C084)
+                                      .descriptionOverlay(
+                                          "Your goods are intended for scientific purposes, research or diagnostic samples")
+                                      .destinationCountryRestrictions(Set.of(UkCountry.XI))
+                                      .build())
+                              .build()))
+                  .build())
+          .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("should order document codes on measure options based on type and if same type then on condition code")
+    void shouldOrderDocumentCodes() {
       MeasureConditionCode measureConditionCode = MeasureConditionCode.A;
       MeasureCondition certificate1MeasureCondition =
-          DocumentaryMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
               .documentCode("C013")
               .requirement(CERTIFICATE_DEFAULT_REQUIREMENT)
-              .description(CERTIFICATE_DEFAULT_DESCRIPTION)
               .build();
       MeasureCondition certificate2MeasureCondition =
-          DocumentaryMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
               .documentCode("C012")
               .requirement(CERTIFICATE_DEFAULT_REQUIREMENT)
-              .description(CERTIFICATE_DEFAULT_DESCRIPTION)
               .build();
       MeasureCondition exception1MeasureCondition =
-          DocumentaryMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
               .documentCode("Y124")
               .requirement(EXCEPTION_DEFAULT_REQUIREMENT)
-              .description(EXCEPTION_DEFAULT_DESCRIPTION)
               .build();
       MeasureCondition exception2MeasureCondition =
-          DocumentaryMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
               .documentCode("Y123")
               .requirement(EXCEPTION_DEFAULT_REQUIREMENT)
-              .description(EXCEPTION_DEFAULT_DESCRIPTION)
               .build();
       MeasureCondition negativeMeasureCondition =
-          NegativeMeasureCondition.builder()
+          MeasureCondition.builder()
               .conditionCode(measureConditionCode)
+              .documentCode("")
               .action("Import/export not allowed after control")
               .build();
 
-      when(documentCodeDescriptionRepository
-              .findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-                  List.of("C012"), IMPORT, locale))
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+          List.of("C012"), AppConfig.LOCALE, true))
           .thenReturn(Flux.empty());
-      when(documentCodeDescriptionRepository
-              .findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-                  List.of("C013"), IMPORT, locale))
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+          List.of("C013"), AppConfig.LOCALE, true))
           .thenReturn(Flux.empty());
 
-      when(documentCodeDescriptionRepository
-              .findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-                  List.of("Y123"), IMPORT, locale))
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+          List.of("Y123"), AppConfig.LOCALE, true))
           .thenReturn(Flux.empty());
-      when(documentCodeDescriptionRepository
-              .findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-                  List.of("Y124"), IMPORT, locale))
+      when(documentCodeDescriptionRepository.findByDocumentCodeInAndLocaleAndPublished(
+          List.of("Y124"), AppConfig.LOCALE, true))
           .thenReturn(Flux.empty());
 
       StepVerifier.create(
@@ -727,8 +846,7 @@ public class SingleMeasureOptionHandlerTest {
                       certificate1MeasureCondition,
                       certificate2MeasureCondition,
                       negativeMeasureCondition),
-                  IMPORT,
-                  locale))
+                  UkCountry.GB))
           .expectNext(
               MeasureOptions.builder()
                   .options(
@@ -738,7 +856,7 @@ public class SingleMeasureOptionHandlerTest {
                               .documentCodeDescription(
                                   DocumentCodeDescription.builder()
                                       .documentCode("C012")
-                                      .descriptionOverlay(CERTIFICATE_DEFAULT_DESCRIPTION)
+                                      .descriptionOverlay(CERTIFICATE_DEFAULT_REQUIREMENT)
                                       .build())
                               .build(),
                           DocumentCodeMeasureOption.builder()
@@ -746,21 +864,21 @@ public class SingleMeasureOptionHandlerTest {
                               .documentCodeDescription(
                                   DocumentCodeDescription.builder()
                                       .documentCode("C013")
-                                      .descriptionOverlay(CERTIFICATE_DEFAULT_DESCRIPTION)
+                                      .descriptionOverlay(CERTIFICATE_DEFAULT_REQUIREMENT)
                                       .build())
                               .build(),
                           ExceptionMeasureOption.exceptionMeasureOptionBuilder()
                               .documentCodeDescription(
                                   DocumentCodeDescription.builder()
                                       .documentCode("Y123")
-                                      .descriptionOverlay(EXCEPTION_DEFAULT_DESCRIPTION)
+                                      .descriptionOverlay(EXCEPTION_DEFAULT_REQUIREMENT)
                                       .build())
                               .build(),
                           ExceptionMeasureOption.exceptionMeasureOptionBuilder()
                               .documentCodeDescription(
                                   DocumentCodeDescription.builder()
                                       .documentCode("Y124")
-                                      .descriptionOverlay(EXCEPTION_DEFAULT_DESCRIPTION)
+                                      .descriptionOverlay(EXCEPTION_DEFAULT_REQUIREMENT)
                                       .build())
                               .build()))
                   .build())

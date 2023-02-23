@@ -17,14 +17,13 @@
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.contentclient.measuretypedescription;
 
 import static org.mockito.Mockito.when;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType.EXPORT;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType.IMPORT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import lombok.SneakyThrows;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -32,8 +31,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
@@ -44,25 +41,26 @@ import reactor.test.StepVerifier;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.config.ApplicationProperties;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.contentclient.ContentApiConfiguration;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.model.MeasureTypeDescription;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.repository.MeasureTypeDescriptionRepository;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
 
 @ExtendWith(MockitoExtension.class)
-class MeasureTypeDescriptionContentClientTest {
+public class MeasureTypeDescriptionContentClientTest {
 
   ApplicationProperties applicationProperties;
   private MockWebServer mockWebServer;
-  private MeasureTypeDescriptionRepository measureTypeDescriptionRepository;
+  private MeasureTypeDescriptionContentClient measureTypeDescriptionContentClient;
   @Mock private ContentApiConfiguration contentApiConfiguration;
+  private static final String CONTENT_SOURCE = "API";
 
   @BeforeEach
   @SneakyThrows
   void beforeEach() {
     mockWebServer = new MockWebServer();
     mockWebServer.start();
-    applicationProperties = new ApplicationProperties(null, contentApiConfiguration);
-    measureTypeDescriptionRepository =
+    applicationProperties =
+        new ApplicationProperties(null, null, contentApiConfiguration, CONTENT_SOURCE);
+    measureTypeDescriptionContentClient =
         new MeasureTypeDescriptionContentClient(WebClient.builder().build(), applicationProperties);
   }
 
@@ -74,14 +72,14 @@ class MeasureTypeDescriptionContentClientTest {
 
   @SneakyThrows
   @Test
-  void shouldReturnImportSpecificMeasureTypeDescriptions() {
+  void shouldReturnMeasureTypeDescriptions() {
     var response =
         Files.readString(
             Path.of(
                 Objects.requireNonNull(
                         getClass()
                             .getClassLoader()
-                            .getResource("stubs/content/measuretypedescription/750_IMPORT_EN.json"))
+                            .getResource("stubs/content/measuretypedescription/750_EN.json"))
                     .toURI()));
 
     var expected =
@@ -90,6 +88,8 @@ class MeasureTypeDescriptionContentClientTest {
                 .measureTypeId("750")
                 .locale(Locale.EN)
                 .descriptionOverlay("## Organic products: import control")
+                .published(true)
+                .destinationCountryRestrictions(Set.of(UkCountry.GB, UkCountry.XI))
                 .build());
 
     mockWebServer.enqueue(
@@ -103,55 +103,15 @@ class MeasureTypeDescriptionContentClientTest {
     when(contentApiConfiguration.getUrl()).thenReturn(baseUrl);
 
     Flux<MeasureTypeDescription> result =
-        measureTypeDescriptionRepository.findMeasureTypeDescriptionsByMeasureTypeIdsAndTradeTypeAndLocale(
-            List.of("750"), IMPORT, Locale.EN);
+        measureTypeDescriptionContentClient.findByMeasureTypeIdInAndLocaleAndPublished(
+            List.of("750"), Locale.EN, true);
 
     StepVerifier.create(result).expectNext(expected.get(0)).verifyComplete();
   }
 
   @SneakyThrows
   @Test
-  void shouldReturnExportSpecificMeasureTypeDescriptions() {
-    var response =
-        Files.readString(
-            Path.of(
-                Objects.requireNonNull(
-                        getClass()
-                            .getClassLoader()
-                            .getResource("stubs/content/measuretypedescription/750_EXPORT_EN.json"))
-                    .toURI()));
-
-    var expected =
-        List.of(
-            MeasureTypeDescription.builder()
-                .measureTypeId("750")
-                .locale(Locale.EN)
-                .descriptionOverlay("## Export Organic products: import control")
-                .build());
-
-    mockWebServer.enqueue(
-        new MockResponse()
-            .setResponseCode(200)
-            .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .setBody(response));
-
-    var url = mockWebServer.url("/").toString();
-    var baseUrl = url.substring(0, url.lastIndexOf("/"));
-    when(contentApiConfiguration.getUrl()).thenReturn(baseUrl);
-
-    Flux<MeasureTypeDescription> result =
-        measureTypeDescriptionRepository.findMeasureTypeDescriptionsByMeasureTypeIdsAndTradeTypeAndLocale(
-            List.of("750"), EXPORT, Locale.EN);
-
-    StepVerifier.create(result).expectNext(expected.get(0)).verifyComplete();
-  }
-
-  @SneakyThrows
-  @ParameterizedTest
-  @MethodSource(
-      "uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.utils.StubDataUtils#tradeTypeAndLocales")
-  void shouldReturnEmptyMeasureTypeDescriptionsWhenNoMatchingFound(
-      TradeType tradeType, Locale locale) {
+  void shouldReturnEmptyMeasureTypeDescriptionsWhenNoMatchingFound() {
     List<MeasureTypeDescriptionDTO> resp = List.of();
     mockWebServer.enqueue(
         new MockResponse()
@@ -164,18 +124,15 @@ class MeasureTypeDescriptionContentClientTest {
     when(contentApiConfiguration.getUrl()).thenReturn(baseUrl);
 
     Flux<MeasureTypeDescription> result =
-        measureTypeDescriptionRepository.findMeasureTypeDescriptionsByMeasureTypeIdsAndTradeTypeAndLocale(
-            List.of("355"), tradeType, locale);
+        measureTypeDescriptionContentClient.findByMeasureTypeIdInAndLocaleAndPublished(
+            List.of("355"), Locale.EN, true);
 
     StepVerifier.create(result).verifyComplete();
   }
 
   @SneakyThrows
-  @ParameterizedTest
-  @MethodSource(
-      "uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.utils.StubDataUtils#tradeTypeAndLocales")
-  void shouldReturnEmptyMeasureTypeDescriptionsWhenInternalServerError(
-      TradeType tradeType, Locale locale) {
+  @Test
+  void shouldReturnEmptyMeasureTypeDescriptionsWhenInternalServerError() {
     mockWebServer.enqueue(
         new MockResponse()
             .setResponseCode(500)
@@ -186,8 +143,8 @@ class MeasureTypeDescriptionContentClientTest {
     when(contentApiConfiguration.getUrl()).thenReturn(baseUrl);
 
     Flux<MeasureTypeDescription> result =
-        measureTypeDescriptionRepository.findMeasureTypeDescriptionsByMeasureTypeIdsAndTradeTypeAndLocale(
-            List.of("355"), tradeType, locale);
+        measureTypeDescriptionContentClient.findByMeasureTypeIdInAndLocaleAndPublished(
+            List.of("355"), Locale.EN, true);
 
     StepVerifier.create(result).verifyComplete();
   }

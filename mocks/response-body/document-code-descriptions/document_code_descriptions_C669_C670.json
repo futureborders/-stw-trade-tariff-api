@@ -3,14 +3,12 @@
     {
       "documentCode": "C669",
       "descriptionOverlay": "You need Notification document for import/export of hazardous or mixed notifiable waste.",
-      "locale": "EN",
-      "tradeType": "IMPORT"
+      "locale": "EN"
     },
     {
       "documentCode": "C670",
       "descriptionOverlay": "You need a movement document for import/export of hazardous or mixed notifiable waste.",
-      "locale": "EN",
-      "tradeType": "IMPORT"
+      "locale": "EN"
     }
   ]
 }

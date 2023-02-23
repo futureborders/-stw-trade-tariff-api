@@ -18,7 +18,9 @@ import lombok.Data;
 
 @Data
 public class HttpProperties {
-  protected String host;
-  protected Integer port;
-  protected String contextPath = "";
+    protected String host;
+    protected Integer port;
+    protected String contextPath = "";
 }
+
+

@@ -27,25 +27,25 @@ public class WebSecurityConfiguration {
 
   // It is necessary to allow inline scripts and styles, and also loading svg blob data for Swagger
   private static final String CSP_HEADER =
-      "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' blob: data:;";
+    "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' blob: data:;";
 
   // force HSTS for HTTP
   private static final StaticServerHttpHeadersWriter HSTS_HEADER_WRITER =
-      StaticServerHttpHeadersWriter.builder()
-          .header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-          .build();
+    StaticServerHttpHeadersWriter.builder()
+      .header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+      .build();
 
   @Bean
   public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
     return http.csrf()
-        .disable()
-        .anonymous()
-        .and()
-        .headers()
-        .writer(HSTS_HEADER_WRITER)
-        .contentSecurityPolicy(CSP_HEADER)
-        .and()
-        .and()
-        .build();
+      .disable()
+      .anonymous()
+      .and()
+      .headers()
+      .writer(HSTS_HEADER_WRITER)
+      .contentSecurityPolicy(CSP_HEADER)
+      .and()
+      .and()
+      .build();
   }
 }

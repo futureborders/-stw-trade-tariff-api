@@ -14,21 +14,31 @@
 
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.model;
 
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Table("document_code_descriptions")
 public class DocumentCodeDescription {
 
+  @Id private Integer id;
+
+  @Column("document_code")
   private String documentCode;
   private String descriptionOverlay;
   private Locale locale;
-  private TradeType tradeType;
+  private boolean published;
+  @Builder.Default
+  private Set<UkCountry> destinationCountryRestrictions = Set.of(UkCountry.GB, UkCountry.XI);
 }

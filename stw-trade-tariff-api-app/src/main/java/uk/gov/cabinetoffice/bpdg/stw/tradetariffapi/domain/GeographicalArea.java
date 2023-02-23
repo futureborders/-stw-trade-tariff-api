@@ -27,5 +27,7 @@ public class GeographicalArea {
   String id;
   String description;
 
-  @JsonIgnore @Singular Set<String> childrenGeographicalAreas;
+  @JsonIgnore
+  @Singular
+  Set<String> childrenGeographicalAreas;
 }

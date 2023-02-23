@@ -23,11 +23,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureCondition;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureConditionCode;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureOptions;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
 
 @AllArgsConstructor
 @Component
@@ -36,7 +35,7 @@ public class MultipleMeasureOptionsHandler {
   private final SingleMeasureOptionHandler singleMeasureOptionHandler;
 
   public Flux<MeasureOptions> getMeasureOptions(
-      List<MeasureCondition> measureConditions, TradeType tradeType, Locale locale) {
+      List<MeasureCondition> measureConditions, UkCountry destinationUkCountry) {
 
     if (CollectionUtils.isEmpty(measureConditions)) {
       return Flux.empty();
@@ -46,14 +45,10 @@ public class MultipleMeasureOptionsHandler {
         measureConditions.stream()
             .collect(Collectors.groupingBy(MeasureCondition::getConditionCode));
 
-    List<Mono<MeasureOptions>> measuresList =
-        measureConditionsByConditionCode.keySet().stream()
-            .sorted()
-            .map(measureConditionsByConditionCode::get)
-            .map(
-                measureConditionsByCode ->
-                    singleMeasureOptionHandler.getMeasureOption(measureConditionsByCode, tradeType, locale))
-            .collect(Collectors.toList());
+    List<Mono<MeasureOptions>> measuresList = measureConditionsByConditionCode.keySet().stream().sorted().map(measureConditionsByConditionCode::get).map(
+        measureConditionsByCode ->
+            singleMeasureOptionHandler.getMeasureOption(measureConditionsByCode, destinationUkCountry))
+        .collect(Collectors.toList());
 
     return Flux.fromIterable(measuresList).flatMapSequential(Function.identity());
   }

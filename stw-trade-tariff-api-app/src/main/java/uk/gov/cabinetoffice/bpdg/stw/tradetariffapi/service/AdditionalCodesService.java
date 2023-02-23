@@ -52,30 +52,15 @@ public class AdditionalCodesService {
             commodityCode, tradeType, originCountry, destinationCountry));
 
     return this.tradeTariffApiGateway
-        .getCommodity(
-            commodityCode,
-            dateOfTrade,
-            tradeType == TradeType.IMPORT
-                ? UkCountry.valueOf(destinationCountry)
-                : UkCountry.valueOf(originCountry))
+        .getCommodity(commodityCode, dateOfTrade, tradeType == TradeType.IMPORT ? UkCountry.valueOf(destinationCountry) : UkCountry.valueOf(originCountry))
         .flatMap(
-            response ->
-                Mono.just(
-                    extractAdditionalCodes(
-                        response,
-                        tradeType,
-                        tradeType == TradeType.IMPORT ? originCountry : destinationCountry,
-                        commodityCode)));
+            response -> Mono.just(extractAdditionalCodes(response, tradeType, tradeType == TradeType.IMPORT ? originCountry : destinationCountry)));
   }
 
   private List<AdditionalCode> extractAdditionalCodes(
-      TradeTariffCommodityResponse response,
-      TradeType tradeType,
-      String tradeDestinationCountry,
-      String commodityCode) {
+      TradeTariffCommodityResponse response, TradeType tradeType, String tradeDestinationCountry) {
     List<Measure> filteredMeasures =
-        measureFilterer.getRestrictiveMeasures(
-            measureBuilder.from(response, commodityCode), tradeType, tradeDestinationCountry);
+        measureFilterer.getRestrictiveMeasures(measureBuilder.from(response), tradeType, tradeDestinationCountry);
 
     return filteredMeasures.stream()
         .map(Measure::getAdditionalCode)

@@ -36,5 +36,6 @@ public class MeasurePayload {
   MeasureType measureType;
   GeographicalArea geographicalArea;
   AdditionalCode additionalCode;
-  @Singular List<MeasureCondition> measureConditions;
+  @Singular
+  List<MeasureCondition> measureConditions;
 }

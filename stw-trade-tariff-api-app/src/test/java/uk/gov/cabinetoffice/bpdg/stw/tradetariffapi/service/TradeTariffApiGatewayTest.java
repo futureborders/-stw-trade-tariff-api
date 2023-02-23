@@ -45,60 +45,57 @@ class TradeTariffApiGatewayTest {
 
   @ParameterizedTest
   @EnumSource(
-      value = UkCountry.class,
-      names = {"GB", "XI"})
+    value = UkCountry.class,
+    names = {"GB", "XI"})
   void shouldThrowExceptionWhenCommodityNotFound(UkCountry destinationCountry) {
     var importDate = LocalDate.now();
     String commodityCode = "4103900000";
     CommoditiesApiVersion commoditiesApiVersion =
-        destinationCountry == UkCountry.GB
-            ? CommoditiesApiVersion.COMMODITIES_GB_V2
-            : CommoditiesApiVersion.COMMODITIES_XI_V2;
+      destinationCountry == UkCountry.GB
+        ? CommoditiesApiVersion.COMMODITIES_GB_V2
+        : CommoditiesApiVersion.COMMODITIES_XI_V2;
     when(tradeTariffApi.getCommodity(commodityCode, importDate, commoditiesApiVersion))
-        .thenReturn(
-            Mono.just(
-                TradeTariffCommodityResponse.builder()
-                    .errors(
-                        List.of(TradeTariffError.builder().detail("commodity not found").build()))
-                    .build()));
+      .thenReturn(
+        Mono.just(
+          TradeTariffCommodityResponse.builder()
+            .errors(
+              List.of(TradeTariffError.builder().detail("commodity not found").build()))
+            .build()));
 
     StepVerifier.create(
-            tradeTariffApiGateway.getCommodity(commodityCode, importDate, destinationCountry))
-        .expectErrorMatches(
-            ex ->
-                ex instanceof ResourceNotFoundException
-                    && "Resource 'Commodity' not found with id '4103900000'"
-                        .equals(ex.getMessage()))
-        .verify();
+        tradeTariffApiGateway.getCommodity(commodityCode, importDate, destinationCountry))
+      .expectErrorMatches(
+        ex -> ex instanceof ResourceNotFoundException && "Resource 'Commodity' not found with id '4103900000'".equals(ex.getMessage()))
+      .verify();
   }
 
   @ParameterizedTest
   @EnumSource(
-      value = UkCountry.class,
-      names = {"GB", "XI"})
+    value = UkCountry.class,
+    names = {"GB", "XI"})
   void shouldReturnAdditionalCodes(UkCountry destinationCountry) {
     var importDate = LocalDate.now();
     String commodityCode = "1234567890";
     CommoditiesApiVersion commoditiesApiVersion =
-        destinationCountry == UkCountry.GB
-            ? CommoditiesApiVersion.COMMODITIES_GB_V2
-            : CommoditiesApiVersion.COMMODITIES_XI_V2;
+      destinationCountry == UkCountry.GB
+        ? CommoditiesApiVersion.COMMODITIES_GB_V2
+        : CommoditiesApiVersion.COMMODITIES_XI_V2;
     TradeTariffCommodityResponse tariffCommodityResponse =
-        TradeTariffCommodityResponse.builder()
-            .data(
-                TradeTariffCommodityResponseData.builder()
-                    .id("1234")
-                    .type("commodity")
-                    .formattedDescription("description")
-                    .goodsNomenclatureItemId(commodityCode)
-                    .build())
-            .build();
+      TradeTariffCommodityResponse.builder()
+        .data(
+          TradeTariffCommodityResponseData.builder()
+            .id("1234")
+            .type("commodity")
+            .formattedDescription("description")
+            .goodsNomenclatureItemId(commodityCode)
+            .build())
+        .build();
     when(tradeTariffApi.getCommodity(commodityCode, importDate, commoditiesApiVersion))
-        .thenReturn(Mono.just(tariffCommodityResponse));
+      .thenReturn(Mono.just(tariffCommodityResponse));
 
     StepVerifier.create(
-            tradeTariffApiGateway.getCommodity(commodityCode, importDate, destinationCountry))
-        .expectNext(tariffCommodityResponse)
-        .verifyComplete();
+        tradeTariffApiGateway.getCommodity(commodityCode, importDate, destinationCountry))
+      .expectNext(tariffCommodityResponse)
+      .verifyComplete();
   }
 }

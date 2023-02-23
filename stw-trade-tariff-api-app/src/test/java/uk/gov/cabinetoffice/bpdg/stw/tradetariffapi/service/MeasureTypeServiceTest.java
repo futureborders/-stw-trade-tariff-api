@@ -17,44 +17,44 @@ package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.service;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType.IMPORT;
 
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.config.AppConfig;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.model.DocumentCodeDescription;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.model.MeasureTypeDescription;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.repository.MeasureTypeDescriptionRepository;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ConditionBasedRestrictiveMeasure;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.repository.MeasureTypeDescriptionContentRepo;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.DocumentCodeMeasureOption;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.DocumentaryMeasureCondition;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Measure;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureCondition;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureConditionCode;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureOptions;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureType;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ConditionBasedRestrictiveMeasure;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.RestrictiveMeasure;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
 
 @ExtendWith(MockitoExtension.class)
 public class MeasureTypeServiceTest {
 
   private static final String MEASURE_TYPE_ID = "1";
   private static final String DEFAULT_DESCRIPTION = "default description";
-  private static final String DESCRIPTION_FROM_CONTENT_API = "description from Content API";
+  private static final String DESCRIPTION_FROM_DB = "description from DB";
 
   private final String commodityCode = "123";
 
-  @Mock private MeasureTypeDescriptionRepository measureTypeDescriptionRepository;
+  @Mock private MeasureTypeDescriptionContentRepo measureTypeDescriptionContentRepo;
   @Mock private MeasureOptionService measureOptionService;
 
   @InjectMocks private MeasureTypeService measureTypeService;
@@ -62,16 +62,13 @@ public class MeasureTypeServiceTest {
   @Nested
   class GetRestrictiveMeasures {
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
+    @Test
     @DisplayName("should discard measure options which are empty")
-    void shouldDiscardEmptyMeasureOptions(Locale locale) {
+    void shouldDiscardEmptyMeasureOptions() {
       List<MeasureCondition> measureConditions1 =
-          List.of(
-              DocumentaryMeasureCondition.builder().conditionCode(MeasureConditionCode.M).build());
+          List.of(MeasureCondition.builder().conditionCode(MeasureConditionCode.M).build());
       List<MeasureCondition> measureConditions2 =
-          List.of(
-              DocumentaryMeasureCondition.builder().conditionCode(MeasureConditionCode.N).build());
+          List.of(MeasureCondition.builder().conditionCode(MeasureConditionCode.N).build());
       Measure measure1 =
           Measure.builder()
               .measureType(
@@ -87,102 +84,96 @@ public class MeasureTypeServiceTest {
               .measureConditions(measureConditions2)
               .build();
 
-      when(measureTypeDescriptionRepository
-              .findMeasureTypeDescriptionsByMeasureTypeIdsAndTradeTypeAndLocale(
-                  List.of(measure1.getMeasureType().getId()), IMPORT, locale))
+      when(measureTypeDescriptionContentRepo.findByMeasureTypeIdInAndLocaleAndPublished(
+              List.of(measure1.getMeasureType().getId()), AppConfig.LOCALE, true))
           .thenReturn(
               Flux.just(
                   MeasureTypeDescription.builder()
                       .measureTypeId(MEASURE_TYPE_ID)
-                      .descriptionOverlay(DESCRIPTION_FROM_CONTENT_API)
+                      .descriptionOverlay(DESCRIPTION_FROM_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.GB, UkCountry.XI))
                       .build()));
 
-      when(measureTypeDescriptionRepository
-              .findMeasureTypeDescriptionsByMeasureTypeIdsAndTradeTypeAndLocale(
-                  List.of(measure2.getMeasureType().getId()), IMPORT, locale))
+      when(measureTypeDescriptionContentRepo.findByMeasureTypeIdInAndLocaleAndPublished(
+              List.of(measure2.getMeasureType().getId()), AppConfig.LOCALE, true))
           .thenReturn(
               Flux.just(
                   MeasureTypeDescription.builder()
                       .measureTypeId("2")
                       .descriptionOverlay("desc DB")
+                      .destinationCountryRestrictions(Set.of(UkCountry.GB, UkCountry.XI))
                       .build()));
 
       MeasureOptions measureOptions1 = MeasureOptions.builder().build();
-      when(measureOptionService.getMeasureOptions(measureConditions1, IMPORT, locale))
+      when(measureOptionService.getMeasureOptions(measureConditions1, UkCountry.GB))
           .thenReturn(Flux.just(measureOptions1));
-      when(measureOptionService.getMeasureOptions(measureConditions2, IMPORT, locale))
+      when(measureOptionService.getMeasureOptions(measureConditions2, UkCountry.GB))
           .thenReturn(Flux.empty());
 
       StepVerifier.create(
-              measureTypeService.getRestrictiveMeasures(
-                  List.of(measure1, measure2), commodityCode, IMPORT, locale))
+              measureTypeService.getSignpostingMeasureTypeContents(
+                  List.of(measure1, measure2), commodityCode, UkCountry.GB))
           .expectNext(
               ConditionBasedRestrictiveMeasure.builder()
                   .id(MEASURE_TYPE_ID)
-                  .descriptionOverlay(DESCRIPTION_FROM_CONTENT_API)
-                  .description(DESCRIPTION_FROM_CONTENT_API)
+                  .descriptionOverlay(DESCRIPTION_FROM_DB)
+                  .description(DESCRIPTION_FROM_DB)
                   .measureOptions(List.of(measureOptions1))
                   .build())
           .verifyComplete();
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
+    @Test
     @DisplayName(
         "should return content when description has been setup for requested destination country with measure option")
-    void shouldReturnContentWhenDescriptionHasBeenSetupForDestinationCountryWithMeasureOption(
-        Locale locale) {
-      List<MeasureCondition> measureConditions =
-          List.of(DocumentaryMeasureCondition.builder().build());
+    void shouldReturnContentWhenDescriptionHasBeenSetupForDestinationCountryWithMeasureOption() {
+      List<MeasureCondition> measureConditions = List.of(MeasureCondition.builder().build());
       String seriesId = "A";
       Measure measure =
           Measure.builder()
               .measureType(
                   MeasureType.builder()
                       .id(MEASURE_TYPE_ID)
-                      .seriesId(seriesId)
+                    .seriesId(seriesId)
                       .description(DEFAULT_DESCRIPTION)
                       .build())
               .measureConditions(measureConditions)
               .build();
 
-      when(measureTypeDescriptionRepository
-              .findMeasureTypeDescriptionsByMeasureTypeIdsAndTradeTypeAndLocale(
-                  List.of(measure.getMeasureType().getId()), IMPORT, locale))
+      when(measureTypeDescriptionContentRepo.findByMeasureTypeIdInAndLocaleAndPublished(
+              List.of(measure.getMeasureType().getId()), AppConfig.LOCALE, true))
           .thenReturn(
               Flux.just(
                   MeasureTypeDescription.builder()
                       .measureTypeId(MEASURE_TYPE_ID)
-                      .descriptionOverlay(DESCRIPTION_FROM_CONTENT_API)
+                      .descriptionOverlay(DESCRIPTION_FROM_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.GB, UkCountry.XI))
                       .build()));
 
       MeasureOptions measureOptions = MeasureOptions.builder().build();
-      when(measureOptionService.getMeasureOptions(measureConditions, IMPORT, locale))
+      when(measureOptionService.getMeasureOptions(measureConditions, UkCountry.GB))
           .thenReturn(Flux.just(measureOptions));
 
       StepVerifier.create(
-              measureTypeService.getRestrictiveMeasures(
-                  List.of(measure), commodityCode, IMPORT, locale))
+              measureTypeService.getSignpostingMeasureTypeContents(
+                  List.of(measure), commodityCode, UkCountry.GB))
           .expectNext(
               ConditionBasedRestrictiveMeasure.builder()
                   .id(MEASURE_TYPE_ID)
-                  .descriptionOverlay(DESCRIPTION_FROM_CONTENT_API)
-                  .description(DESCRIPTION_FROM_CONTENT_API)
+                  .descriptionOverlay(DESCRIPTION_FROM_DB)
+                  .description(DESCRIPTION_FROM_DB)
                   .measureTypeSeries(seriesId)
                   .measureOptions(List.of(measureOptions))
                   .build())
           .verifyComplete();
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
+    @Test
     @DisplayName(
         "should return content when description has been setup for more than one destination country with measure option")
     void
-        shouldReturnContentWhenDescriptionHasBeenSetupForMoreThanOneDestinationCountryWithMeasureOption(
-            Locale locale) {
-      List<MeasureCondition> measureConditions =
-          List.of(DocumentaryMeasureCondition.builder().build());
+        shouldReturnContentWhenDescriptionHasBeenSetupForMoreThanOneDestinationCountryWithMeasureOption() {
+      List<MeasureCondition> measureConditions = List.of(MeasureCondition.builder().build());
       String seriesId = "A";
       Measure measure =
           Measure.builder()
@@ -195,32 +186,37 @@ public class MeasureTypeServiceTest {
               .measureConditions(measureConditions)
               .build();
 
-      when(measureTypeDescriptionRepository
-              .findMeasureTypeDescriptionsByMeasureTypeIdsAndTradeTypeAndLocale(
-                  List.of(measure.getMeasureType().getId()), IMPORT, locale))
+      when(measureTypeDescriptionContentRepo.findByMeasureTypeIdInAndLocaleAndPublished(
+              List.of(measure.getMeasureType().getId()), AppConfig.LOCALE, true))
           .thenReturn(
               Flux.just(
                   MeasureTypeDescription.builder()
                       .measureTypeId(MEASURE_TYPE_ID)
-                      .descriptionOverlay(DESCRIPTION_FROM_CONTENT_API)
+                      .descriptionOverlay(DESCRIPTION_FROM_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.GB))
+                      .build(),
+                  MeasureTypeDescription.builder()
+                      .measureTypeId(MEASURE_TYPE_ID)
+                      .descriptionOverlay(DESCRIPTION_FROM_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.XI))
                       .build()));
 
       DocumentCodeMeasureOption expectedMeasureOption =
           DocumentCodeMeasureOption.builder()
               .documentCodeDescription(DocumentCodeDescription.builder().build())
               .build();
-      when(measureOptionService.getMeasureOptions(measureConditions, IMPORT, locale))
+      when(measureOptionService.getMeasureOptions(measureConditions, UkCountry.GB))
           .thenReturn(
               Flux.just(MeasureOptions.builder().options(List.of(expectedMeasureOption)).build()));
 
       StepVerifier.create(
-              measureTypeService.getRestrictiveMeasures(
-                  List.of(measure), commodityCode, IMPORT, locale))
+              measureTypeService.getSignpostingMeasureTypeContents(
+                  List.of(measure), commodityCode, UkCountry.GB))
           .expectNext(
               ConditionBasedRestrictiveMeasure.builder()
                   .id(MEASURE_TYPE_ID)
-                  .descriptionOverlay(DESCRIPTION_FROM_CONTENT_API)
-                  .description(DESCRIPTION_FROM_CONTENT_API)
+                  .descriptionOverlay(DESCRIPTION_FROM_DB)
+                  .description(DESCRIPTION_FROM_DB)
                   .measureOptions(
                       List.of(
                           MeasureOptions.builder().options(List.of(expectedMeasureOption)).build()))
@@ -229,13 +225,11 @@ public class MeasureTypeServiceTest {
           .verifyComplete();
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
+    @Test
     @DisplayName(
         "should return content when no description has been setup for requested destination country")
-    void shouldReturnContentWhenNoDescriptionHasBeenSetupForDestinationCountry(Locale locale) {
-      List<MeasureCondition> measureConditions =
-          List.of(DocumentaryMeasureCondition.builder().build());
+    void shouldReturnContentWhenNoDescriptionHasBeenSetupForDestinationCountry() {
+      List<MeasureCondition> measureConditions = List.of(MeasureCondition.builder().build());
       String seriesId = "A";
       Measure measure =
           Measure.builder()
@@ -248,78 +242,27 @@ public class MeasureTypeServiceTest {
               .measureConditions(measureConditions)
               .build();
 
-      when(measureTypeDescriptionRepository
-              .findMeasureTypeDescriptionsByMeasureTypeIdsAndTradeTypeAndLocale(
-                  List.of(measure.getMeasureType().getId()), IMPORT, locale))
+      when(measureTypeDescriptionContentRepo.findByMeasureTypeIdInAndLocaleAndPublished(
+              List.of(measure.getMeasureType().getId()), AppConfig.LOCALE, true))
           .thenReturn(
               Flux.just(
                   MeasureTypeDescription.builder()
                       .measureTypeId(MEASURE_TYPE_ID)
-                      .descriptionOverlay(DESCRIPTION_FROM_CONTENT_API)
+                      .descriptionOverlay(DESCRIPTION_FROM_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.XI))
                       .build()));
 
       DocumentCodeMeasureOption expectedMeasureOption =
           DocumentCodeMeasureOption.builder()
               .documentCodeDescription(DocumentCodeDescription.builder().build())
               .build();
-      when(measureOptionService.getMeasureOptions(measureConditions, IMPORT, locale))
+      when(measureOptionService.getMeasureOptions(measureConditions, UkCountry.GB))
           .thenReturn(
               Flux.just(MeasureOptions.builder().options(List.of(expectedMeasureOption)).build()));
 
       List<RestrictiveMeasure> measureTypeContent =
           measureTypeService
-              .getRestrictiveMeasures(List.of(measure), commodityCode, IMPORT, locale)
-              .collectList()
-              .block();
-
-      assertThat(measureTypeContent).isNotNull().hasSize(1);
-      assertThat(measureTypeContent.get(0))
-          .isEqualTo(
-              ConditionBasedRestrictiveMeasure.builder()
-                  .id(MEASURE_TYPE_ID)
-                  .descriptionOverlay(DESCRIPTION_FROM_CONTENT_API)
-                  .description(DESCRIPTION_FROM_CONTENT_API)
-                  .measureOptions(
-                      List.of(
-                          MeasureOptions.builder().options(List.of(expectedMeasureOption)).build()))
-                  .measureTypeSeries(seriesId)
-                  .build());
-    }
-
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    @DisplayName("should return content when no description has been setup for measure type")
-    void shouldReturnContentWhenNoDescriptionHasBeenSetupForMeasureType(Locale locale) {
-      List<MeasureCondition> measureConditions =
-          List.of(DocumentaryMeasureCondition.builder().build());
-      String seriesId = "A";
-      Measure measure =
-          Measure.builder()
-              .measureType(
-                  MeasureType.builder()
-                      .id(MEASURE_TYPE_ID)
-                      .description(DEFAULT_DESCRIPTION)
-                      .seriesId(seriesId)
-                      .build())
-              .measureConditions(measureConditions)
-              .build();
-
-      when(measureTypeDescriptionRepository
-              .findMeasureTypeDescriptionsByMeasureTypeIdsAndTradeTypeAndLocale(
-                  List.of(measure.getMeasureType().getId()), IMPORT, locale))
-          .thenReturn(Flux.empty());
-
-      DocumentCodeMeasureOption expectedMeasureOption =
-          DocumentCodeMeasureOption.builder()
-              .documentCodeDescription(DocumentCodeDescription.builder().build())
-              .build();
-      when(measureOptionService.getMeasureOptions(measureConditions, IMPORT, locale))
-          .thenReturn(
-              Flux.just(MeasureOptions.builder().options(List.of(expectedMeasureOption)).build()));
-
-      List<RestrictiveMeasure> measureTypeContent =
-          measureTypeService
-              .getRestrictiveMeasures(List.of(measure), commodityCode, IMPORT, locale)
+              .getSignpostingMeasureTypeContents(List.of(measure), commodityCode, UkCountry.GB)
               .collectList()
               .block();
 
@@ -337,13 +280,59 @@ public class MeasureTypeServiceTest {
                   .build());
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    @DisplayName("should raise error when more than one description has been setup")
-    void shouldRaiseErrorWhenMoreThanOneDescriptionHasBeenSetupForTheRequestedDestinationCountry(
-        Locale locale) {
-      List<MeasureCondition> measureConditions =
-          List.of(DocumentaryMeasureCondition.builder().build());
+    @Test
+    @DisplayName("should return content when no description has been setup for measure type")
+    void shouldReturnContentWhenNoDescriptionHasBeenSetupForMeasureType() {
+      List<MeasureCondition> measureConditions = List.of(MeasureCondition.builder().build());
+      String seriesId = "A";
+      Measure measure =
+          Measure.builder()
+              .measureType(
+                  MeasureType.builder()
+                      .id(MEASURE_TYPE_ID)
+                      .description(DEFAULT_DESCRIPTION)
+                      .seriesId(seriesId)
+                      .build())
+              .measureConditions(measureConditions)
+              .build();
+
+      when(measureTypeDescriptionContentRepo.findByMeasureTypeIdInAndLocaleAndPublished(
+              List.of(measure.getMeasureType().getId()), AppConfig.LOCALE, true))
+          .thenReturn(Flux.empty());
+
+      DocumentCodeMeasureOption expectedMeasureOption =
+          DocumentCodeMeasureOption.builder()
+              .documentCodeDescription(DocumentCodeDescription.builder().build())
+              .build();
+      when(measureOptionService.getMeasureOptions(measureConditions, UkCountry.GB))
+          .thenReturn(
+              Flux.just(MeasureOptions.builder().options(List.of(expectedMeasureOption)).build()));
+
+      List<RestrictiveMeasure> measureTypeContent =
+          measureTypeService
+              .getSignpostingMeasureTypeContents(List.of(measure), commodityCode, UkCountry.GB)
+              .collectList()
+              .block();
+
+      assertThat(measureTypeContent).isNotNull().hasSize(1);
+      assertThat(measureTypeContent.get(0))
+          .isEqualTo(
+              ConditionBasedRestrictiveMeasure.builder()
+                  .id(MEASURE_TYPE_ID)
+                  .descriptionOverlay(DEFAULT_DESCRIPTION)
+                  .description(DEFAULT_DESCRIPTION)
+                  .measureOptions(
+                      List.of(
+                          MeasureOptions.builder().options(List.of(expectedMeasureOption)).build()))
+                  .measureTypeSeries(seriesId)
+                  .build());
+    }
+
+    @Test
+    @DisplayName(
+        "should raise error when more than one description has been setup for the requested destination country")
+    void shouldRaiseErrorWhenMoreThanOneDescriptionHasBeenSetupForTheRequestedDestinationCountry() {
+      List<MeasureCondition> measureConditions = List.of(MeasureCondition.builder().build());
       Measure measure =
           Measure.builder()
               .measureType(
@@ -354,29 +343,33 @@ public class MeasureTypeServiceTest {
               .measureConditions(measureConditions)
               .build();
 
-      when(measureTypeDescriptionRepository
-              .findMeasureTypeDescriptionsByMeasureTypeIdsAndTradeTypeAndLocale(
-                  List.of(measure.getMeasureType().getId()), IMPORT, locale))
+      Locale locale = AppConfig.LOCALE;
+      UkCountry destinationUkCountry = UkCountry.GB;
+      when(measureTypeDescriptionContentRepo.findByMeasureTypeIdInAndLocaleAndPublished(
+              List.of(measure.getMeasureType().getId()), locale, true))
           .thenReturn(
               Flux.just(
                   MeasureTypeDescription.builder()
                       .measureTypeId(MEASURE_TYPE_ID)
-                      .descriptionOverlay(DESCRIPTION_FROM_CONTENT_API)
+                      .descriptionOverlay(DESCRIPTION_FROM_DB)
+                      .destinationCountryRestrictions(Set.of(destinationUkCountry))
                       .build(),
                   MeasureTypeDescription.builder()
                       .measureTypeId(MEASURE_TYPE_ID)
-                      .descriptionOverlay(DESCRIPTION_FROM_CONTENT_API)
+                      .descriptionOverlay(DESCRIPTION_FROM_DB)
+                      .destinationCountryRestrictions(Set.of(destinationUkCountry))
                       .build()));
 
-      when(measureOptionService.getMeasureOptions(measureConditions, IMPORT, locale))
+      when(measureOptionService.getMeasureOptions(measureConditions, destinationUkCountry))
           .thenReturn(Flux.just(MeasureOptions.builder().build()));
 
-      Mono<List<RestrictiveMeasure>> restrictiveMeasures =
+      Mono<List<RestrictiveMeasure>> signpostingMeasureTypeContent =
           measureTypeService
-              .getRestrictiveMeasures(List.of(measure), commodityCode, IMPORT, locale)
+              .getSignpostingMeasureTypeContents(
+                  List.of(measure), commodityCode, destinationUkCountry)
               .collectList();
 
-      StepVerifier.create(restrictiveMeasures)
+      StepVerifier.create(signpostingMeasureTypeContent)
           .expectSubscription()
           .expectErrorMatches(
               error ->
@@ -385,20 +378,17 @@ public class MeasureTypeServiceTest {
                           .getMessage()
                           .equals(
                               format(
-                                  "More than one measure type descriptions configured for measure type %s, locale %s",
-                                  measure.getMeasureType().getId(), locale)))
+                                  "More than one measure type descriptions configured for measure type %s, locale %s, destination country %s",
+                                  measure.getMeasureType().getId(), locale, destinationUkCountry)))
           .verify();
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
+    @Test
     @DisplayName(
         "should return hard coded content for 2309902000 commodity and measure type 465 when description has been setup")
     void
-        shouldReturnHardCodedContentFor2309902000CommodityAndMeasureType465WhenDescriptionHasBeenSetupForDestinationCountryWithMeasureOption(
-            Locale locale) {
-      List<MeasureCondition> measureConditions =
-          List.of(DocumentaryMeasureCondition.builder().build());
+        shouldReturnHardCodedContentFor2309902000CommodityAndMeasureType465WhenDescriptionHasBeenSetupForDestinationCountryWithMeasureOption() {
+      List<MeasureCondition> measureConditions = List.of(MeasureCondition.builder().build());
       String seriesId = "B";
       Measure measure =
           Measure.builder()
@@ -411,29 +401,33 @@ public class MeasureTypeServiceTest {
               .measureConditions(measureConditions)
               .build();
 
-      when(measureTypeDescriptionRepository
-              .findMeasureTypeDescriptionsByMeasureTypeIdsAndTradeTypeAndLocale(
-                  List.of(measure.getMeasureType().getId()), IMPORT, locale))
+      when(measureTypeDescriptionContentRepo.findByMeasureTypeIdInAndLocaleAndPublished(
+              List.of(measure.getMeasureType().getId()), AppConfig.LOCALE, true))
           .thenReturn(
               Flux.just(
                   MeasureTypeDescription.builder()
                       .measureTypeId("465")
-                      .descriptionOverlay(DESCRIPTION_FROM_CONTENT_API)
+                      .descriptionOverlay(DESCRIPTION_FROM_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.GB))
+                      .build(),
+                  MeasureTypeDescription.builder()
+                      .measureTypeId("465")
+                      .descriptionOverlay(DESCRIPTION_FROM_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.XI))
                       .build()));
 
-      when(measureOptionService.getMeasureOptions(measureConditions, IMPORT, locale))
+      when(measureOptionService.getMeasureOptions(measureConditions, UkCountry.GB))
           .thenReturn(Flux.just(MeasureOptions.builder().build()));
 
       List<RestrictiveMeasure> measureTypeContent =
           measureTypeService
-              .getRestrictiveMeasures(List.of(measure), "2309902000", IMPORT, locale)
+              .getSignpostingMeasureTypeContents(List.of(measure), "2309902000", UkCountry.GB)
               .collectList()
               .block();
 
       assertThat(measureTypeContent).isNotNull().hasSize(1);
-      String expectedDescription =
-          DESCRIPTION_FROM_CONTENT_API.concat(
-              "%0A%0AIf you do not have a [certificate issued by the Federal Grain Inspection Service](https://www.legislation.gov.uk/eur/2007/1375/annex/I) and a [certificate issued by the USA wet milling industry](https://www.legislation.gov.uk/eur/2017/337/images/eur_20170337_2017-02-27_en_001?view=extent), your goods must go for laboratory analysis in the UK.%0A%0AIf you import residues from the manufacture of starch from maize from the USA, your goods will be subject to random sampling at the UK border if they’re accompanied by a [certificate issued by the Federal Grain Inspection Service](https://www.legislation.gov.uk/eur/2007/1375/annex/I)%0A%0AIn this case, you will need a [certificate issued by the USA wet milling industry](https://www.legislation.gov.uk/eur/2017/337/images/eur_20170337_2017-02-27_en_001?view=extent) when you import these goods.");
+      String expectedDescription = DESCRIPTION_FROM_DB.concat(
+          "%0A%0AIf you do not have a [certificate issued by the Federal Grain Inspection Service](https://www.legislation.gov.uk/eur/2007/1375/annex/I) and a [certificate issued by the USA wet milling industry](https://www.legislation.gov.uk/eur/2017/337/images/eur_20170337_2017-02-27_en_001?view=extent), your goods must go for laboratory analysis in the UK.%0A%0AIf you import residues from the manufacture of starch from maize from the USA, your goods will be subject to random sampling at the UK border if they’re accompanied by a [certificate issued by the Federal Grain Inspection Service](https://www.legislation.gov.uk/eur/2007/1375/annex/I)%0A%0AIn this case, you will need a [certificate issued by the USA wet milling industry](https://www.legislation.gov.uk/eur/2017/337/images/eur_20170337_2017-02-27_en_001?view=extent) when you import these goods.");
       assertThat(measureTypeContent.get(0))
           .isEqualTo(
               ConditionBasedRestrictiveMeasure.builder()
@@ -444,15 +438,12 @@ public class MeasureTypeServiceTest {
                   .build());
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
+    @Test
     @DisplayName(
         "should return hard coded content for 2309902000 commodity and measure type 465 when no description has been setup for requested destination country")
     void
-        shouldReturnHardCodedContentFor2309902000CommodityAndMeasureType465WhenNoDescriptionHasBeenSetupForDestinationCountry(
-            Locale locale) {
-      List<MeasureCondition> measureConditions =
-          List.of(DocumentaryMeasureCondition.builder().build());
+        shouldReturnHardCodedContentFor2309902000CommodityAndMeasureType465WhenNoDescriptionHasBeenSetupForDestinationCountry() {
+      List<MeasureCondition> measureConditions = List.of(MeasureCondition.builder().build());
       String seriesId = "B";
       Measure measure =
           Measure.builder()
@@ -465,29 +456,28 @@ public class MeasureTypeServiceTest {
               .measureConditions(measureConditions)
               .build();
 
-      when(measureTypeDescriptionRepository
-              .findMeasureTypeDescriptionsByMeasureTypeIdsAndTradeTypeAndLocale(
-                  List.of(measure.getMeasureType().getId()), IMPORT, locale))
+      when(measureTypeDescriptionContentRepo.findByMeasureTypeIdInAndLocaleAndPublished(
+              List.of(measure.getMeasureType().getId()), AppConfig.LOCALE, true))
           .thenReturn(
               Flux.just(
                   MeasureTypeDescription.builder()
                       .measureTypeId("465")
-                      .descriptionOverlay(DESCRIPTION_FROM_CONTENT_API)
+                      .descriptionOverlay(DESCRIPTION_FROM_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.XI))
                       .build()));
 
-      when(measureOptionService.getMeasureOptions(measureConditions, IMPORT, locale))
+      when(measureOptionService.getMeasureOptions(measureConditions, UkCountry.GB))
           .thenReturn(Flux.just(MeasureOptions.builder().build()));
 
       List<RestrictiveMeasure> measureTypeContent =
           measureTypeService
-              .getRestrictiveMeasures(List.of(measure), "2309902000", IMPORT, locale)
+              .getSignpostingMeasureTypeContents(List.of(measure), "2309902000", UkCountry.GB)
               .collectList()
               .block();
 
       assertThat(measureTypeContent).isNotNull().hasSize(1);
-      String expectedDescription =
-          DESCRIPTION_FROM_CONTENT_API.concat(
-              "%0A%0AIf you do not have a [certificate issued by the Federal Grain Inspection Service](https://www.legislation.gov.uk/eur/2007/1375/annex/I) and a [certificate issued by the USA wet milling industry](https://www.legislation.gov.uk/eur/2017/337/images/eur_20170337_2017-02-27_en_001?view=extent), your goods must go for laboratory analysis in the UK.%0A%0AIf you import residues from the manufacture of starch from maize from the USA, your goods will be subject to random sampling at the UK border if they’re accompanied by a [certificate issued by the Federal Grain Inspection Service](https://www.legislation.gov.uk/eur/2007/1375/annex/I)%0A%0AIn this case, you will need a [certificate issued by the USA wet milling industry](https://www.legislation.gov.uk/eur/2017/337/images/eur_20170337_2017-02-27_en_001?view=extent) when you import these goods.");
+      String expectedDescription = DEFAULT_DESCRIPTION.concat(
+          "%0A%0AIf you do not have a [certificate issued by the Federal Grain Inspection Service](https://www.legislation.gov.uk/eur/2007/1375/annex/I) and a [certificate issued by the USA wet milling industry](https://www.legislation.gov.uk/eur/2017/337/images/eur_20170337_2017-02-27_en_001?view=extent), your goods must go for laboratory analysis in the UK.%0A%0AIf you import residues from the manufacture of starch from maize from the USA, your goods will be subject to random sampling at the UK border if they’re accompanied by a [certificate issued by the Federal Grain Inspection Service](https://www.legislation.gov.uk/eur/2007/1375/annex/I)%0A%0AIn this case, you will need a [certificate issued by the USA wet milling industry](https://www.legislation.gov.uk/eur/2017/337/images/eur_20170337_2017-02-27_en_001?view=extent) when you import these goods.");
       assertThat(measureTypeContent.get(0))
           .isEqualTo(
               ConditionBasedRestrictiveMeasure.builder()
@@ -498,15 +488,12 @@ public class MeasureTypeServiceTest {
                   .build());
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
+    @Test
     @DisplayName(
         "should return without hard coded content for any commodity with measure type 465 when description has been setup")
     void
-        shouldReturnWithoutHardCodedContentForAnyCommodityWithMeasureType465WhenDescriptionHasBeenSetupForDestinationCountryWithMeasureOption(
-            Locale locale) {
-      List<MeasureCondition> measureConditions =
-          List.of(DocumentaryMeasureCondition.builder().build());
+        shouldReturnWithoutHardCodedContentForAnyCommodityWithMeasureType465WhenDescriptionHasBeenSetupForDestinationCountryWithMeasureOption() {
+      List<MeasureCondition> measureConditions = List.of(MeasureCondition.builder().build());
       String seriesId = "B";
       Measure measure =
           Measure.builder()
@@ -519,23 +506,28 @@ public class MeasureTypeServiceTest {
               .measureConditions(measureConditions)
               .build();
 
-      when(measureTypeDescriptionRepository
-              .findMeasureTypeDescriptionsByMeasureTypeIdsAndTradeTypeAndLocale(
-                  List.of(measure.getMeasureType().getId()), IMPORT, locale))
+      when(measureTypeDescriptionContentRepo.findByMeasureTypeIdInAndLocaleAndPublished(
+              List.of(measure.getMeasureType().getId()), AppConfig.LOCALE, true))
           .thenReturn(
               Flux.just(
                   MeasureTypeDescription.builder()
                       .measureTypeId("465")
-                      .descriptionOverlay(DESCRIPTION_FROM_CONTENT_API)
+                      .descriptionOverlay(DESCRIPTION_FROM_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.GB))
+                      .build(),
+                  MeasureTypeDescription.builder()
+                      .measureTypeId("465")
+                      .descriptionOverlay(DESCRIPTION_FROM_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.XI))
                       .build()));
 
       MeasureOptions measureOptions = MeasureOptions.builder().build();
-      when(measureOptionService.getMeasureOptions(measureConditions, IMPORT, locale))
+      when(measureOptionService.getMeasureOptions(measureConditions, UkCountry.GB))
           .thenReturn(Flux.just(measureOptions));
 
       List<RestrictiveMeasure> measureTypeContent =
           measureTypeService
-              .getRestrictiveMeasures(List.of(measure), "2309902001", IMPORT, locale)
+              .getSignpostingMeasureTypeContents(List.of(measure), "2309902001", UkCountry.GB)
               .collectList()
               .block();
 
@@ -544,22 +536,19 @@ public class MeasureTypeServiceTest {
           .isEqualTo(
               ConditionBasedRestrictiveMeasure.builder()
                   .id("465")
-                  .descriptionOverlay(DESCRIPTION_FROM_CONTENT_API)
-                  .description(DESCRIPTION_FROM_CONTENT_API)
+                  .descriptionOverlay(DESCRIPTION_FROM_DB)
+                  .description(DESCRIPTION_FROM_DB)
                   .measureOptions(List.of(measureOptions))
                   .measureTypeSeries(seriesId)
                   .build());
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
+    @Test
     @DisplayName(
         "should return hard coded content for any commodity with measure type 362 when description has been setup")
     void
-        shouldReturnHardCodedContentForAnyCommodityWithMeasureType362WhenDescriptionHasBeenSetupForDestinationCountryWithMeasureOption(
-            Locale locale) {
-      List<MeasureCondition> measureConditions =
-          List.of(DocumentaryMeasureCondition.builder().build());
+        shouldReturnHardCodedContentForAnyCommodityWithMeasureType362WhenDescriptionHasBeenSetupForDestinationCountryWithMeasureOption() {
+      List<MeasureCondition> measureConditions = List.of(MeasureCondition.builder().build());
       String seriesId = "B";
       Measure measure =
           Measure.builder()
@@ -572,30 +561,34 @@ public class MeasureTypeServiceTest {
               .measureConditions(measureConditions)
               .build();
 
-      when(measureTypeDescriptionRepository
-              .findMeasureTypeDescriptionsByMeasureTypeIdsAndTradeTypeAndLocale(
-                  List.of(measure.getMeasureType().getId()), IMPORT, locale))
+      when(measureTypeDescriptionContentRepo.findByMeasureTypeIdInAndLocaleAndPublished(
+              List.of(measure.getMeasureType().getId()), AppConfig.LOCALE, true))
           .thenReturn(
               Flux.just(
                   MeasureTypeDescription.builder()
                       .measureTypeId("362")
-                      .descriptionOverlay(DESCRIPTION_FROM_CONTENT_API)
+                      .descriptionOverlay(DESCRIPTION_FROM_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.GB))
+                      .build(),
+                  MeasureTypeDescription.builder()
+                      .measureTypeId("362")
+                      .descriptionOverlay(DESCRIPTION_FROM_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.XI))
                       .build()));
 
       MeasureOptions measureOptions = MeasureOptions.builder().build();
-      when(measureOptionService.getMeasureOptions(measureConditions, IMPORT, locale))
+      when(measureOptionService.getMeasureOptions(measureConditions, UkCountry.GB))
           .thenReturn(Flux.just(measureOptions));
 
       List<RestrictiveMeasure> measureTypeContent =
           measureTypeService
-              .getRestrictiveMeasures(List.of(measure), commodityCode, IMPORT, locale)
+              .getSignpostingMeasureTypeContents(List.of(measure), commodityCode, UkCountry.GB)
               .collectList()
               .block();
 
       assertThat(measureTypeContent).isNotNull().hasSize(1);
-      String expectedDescription =
-          DESCRIPTION_FROM_CONTENT_API.concat(
-              "%0A%0AIf you import precursor chemicals, you need authorisation from the Home Office. [Read about precursor chemical licensing](https://www.gov.uk/guidance/precursor-chemical-licensing)");
+      String expectedDescription = DESCRIPTION_FROM_DB.concat(
+          "%0A%0AIf you import precursor chemicals, you need authorisation from the Home Office. [Read about precursor chemical licensing](https://www.gov.uk/guidance/precursor-chemical-licensing)");
       assertThat(measureTypeContent.get(0))
           .isEqualTo(
               ConditionBasedRestrictiveMeasure.builder()
@@ -606,15 +599,12 @@ public class MeasureTypeServiceTest {
                   .build());
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
+    @Test
     @DisplayName(
         "should return hard coded content for any commodity with measure type 362 when no description has been setup for requested destination country")
     void
-        shouldReturnHardCodedContentForAnyCommodityWithMeasureType362WhenNoDescriptionHasBeenSetupForDestinationCountry(
-            Locale locale) {
-      List<MeasureCondition> measureConditions =
-          List.of(DocumentaryMeasureCondition.builder().build());
+        shouldReturnHardCodedContentForAnyCommodityWithMeasureType362WhenNoDescriptionHasBeenSetupForDestinationCountry() {
+      List<MeasureCondition> measureConditions = List.of(MeasureCondition.builder().build());
       String seriesId = "B";
       Measure measure =
           Measure.builder()
@@ -627,30 +617,29 @@ public class MeasureTypeServiceTest {
               .measureConditions(measureConditions)
               .build();
 
-      when(measureTypeDescriptionRepository
-              .findMeasureTypeDescriptionsByMeasureTypeIdsAndTradeTypeAndLocale(
-                  List.of(measure.getMeasureType().getId()), IMPORT, locale))
+      when(measureTypeDescriptionContentRepo.findByMeasureTypeIdInAndLocaleAndPublished(
+              List.of(measure.getMeasureType().getId()), AppConfig.LOCALE, true))
           .thenReturn(
               Flux.just(
                   MeasureTypeDescription.builder()
                       .measureTypeId("362")
-                      .descriptionOverlay(DESCRIPTION_FROM_CONTENT_API)
+                      .descriptionOverlay(DESCRIPTION_FROM_DB)
+                      .destinationCountryRestrictions(Set.of(UkCountry.XI))
                       .build()));
 
       MeasureOptions measureOptions = MeasureOptions.builder().build();
-      when(measureOptionService.getMeasureOptions(measureConditions, IMPORT, locale))
+      when(measureOptionService.getMeasureOptions(measureConditions, UkCountry.GB))
           .thenReturn(Flux.just(measureOptions));
 
       List<RestrictiveMeasure> measureTypeContent =
           measureTypeService
-              .getRestrictiveMeasures(List.of(measure), commodityCode, IMPORT, locale)
+              .getSignpostingMeasureTypeContents(List.of(measure), commodityCode, UkCountry.GB)
               .collectList()
               .block();
 
       assertThat(measureTypeContent).isNotNull().hasSize(1);
-      String expectedDescription =
-          DESCRIPTION_FROM_CONTENT_API.concat(
-              "%0A%0AIf you import precursor chemicals, you need authorisation from the Home Office. [Read about precursor chemical licensing](https://www.gov.uk/guidance/precursor-chemical-licensing)");
+      String expectedDescription = DEFAULT_DESCRIPTION.concat(
+          "%0A%0AIf you import precursor chemicals, you need authorisation from the Home Office. [Read about precursor chemical licensing](https://www.gov.uk/guidance/precursor-chemical-licensing)");
       assertThat(measureTypeContent.get(0))
           .isEqualTo(
               ConditionBasedRestrictiveMeasure.builder()

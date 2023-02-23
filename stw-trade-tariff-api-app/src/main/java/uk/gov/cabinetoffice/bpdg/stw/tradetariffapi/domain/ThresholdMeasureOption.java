@@ -15,153 +15,57 @@
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain;
 
 import static java.lang.String.format;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ThresholdMeasureOptionSubType.UNIT_BASED;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ThresholdMeasureOptionSubType.VOLUME_BASED;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ThresholdMeasureOptionSubType.WEIGHT_BASED;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import java.util.Optional;
+import java.util.regex.Pattern;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
-import org.apache.commons.lang3.StringUtils;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.config.AppConfig;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ThresholdMeasureOption implements MeasureOption {
 
-  public static final String WEIGHT_VOLUME_DESCRIPTION_START = "If your shipment ";
-  public static final String PRICE_DESCRIPTION_START = "If ";
-  private static final String NO_UNIT_CODE="NO_UNIT_CODE";
+  public static final String THRESHOLD_MEASURE_OPTION_START_DESCRIPTION = "If your shipment ";
 
-  public static final String PRICE_BASED_DESCRIPTION =
-      PRICE_DESCRIPTION_START
-          + "the value of your shipment is %s than %s%s, then your goods are exempt.";
-
-  private static final String WEIGHT_VOLUME_DESCRIPTION_FORMAT =
-      WEIGHT_VOLUME_DESCRIPTION_START + "%s %s than %s %s, then your goods are exempt.";
-
-  public static final String PRICE_PER_UNIT_BASED_DESCRIPTION =
-      PRICE_DESCRIPTION_START
-          + "the value of your shipment is %s than %s%s / %s, then your goods are exempt.";
+  private static final String DESCRIPTION_FORMAT =
+    THRESHOLD_MEASURE_OPTION_START_DESCRIPTION + "%s %s than %s %s, then your goods are exempt.";
+  private static final Pattern REQUIREMENT_REGEX =
+    Pattern.compile("<span>(\\d*\\.?\\d*)</span> <abbr title='(.*)'>.*</abbr>");
 
   private final MeasureOptionType type;
-  private final ThresholdMeasureOptionSubType subtype;
-  private final String unit;
-
-  @JsonIgnore private final ThresholdMeasureCondition threshold;
-  @JsonIgnore private final Locale locale;
-
+  private final String requirement;
   private final MeasureConditionCode conditionCode;
 
   @Builder
-  public ThresholdMeasureOption(@NonNull ThresholdMeasureCondition threshold, @NonNull Locale locale) {
+  public ThresholdMeasureOption(@NonNull MeasureCondition threshold) {
     this.type = MeasureOptionType.THRESHOLD;
-    this.threshold = threshold;
-    this.conditionCode = threshold.getConditionCode();
-    this.locale = locale;
+    this.requirement = threshold.getRequirement();
 
-    if (threshold instanceof PricePerUnitBasedThresholdMeasureCondition) {
-      this.subtype = ThresholdMeasureOptionSubType.PRICE_PER_UNIT_BASED;
-      String conditionMeasurementUnitCode = ((PricePerUnitBasedThresholdMeasureCondition) threshold).getConditionMeasurementUnitCode();
-      String measureUnitCode =
-          StringUtils.isNotBlank(conditionMeasurementUnitCode)
-              ? conditionMeasurementUnitCode
-              : NO_UNIT_CODE;
-
-      this.unit =
-          Optional.ofNullable(measureUnitCode)
-              .map(unitCode -> MeasureUnit.valueOf(unitCode).getUnit(locale, 1))
-              .orElseThrow(
-                  () ->
-                      new IllegalStateException(
-                          format(
-                              "Not able to determine unit for unitcode %s",
-                              conditionMeasurementUnitCode)));
-    } else if (threshold instanceof PriceBasedThresholdMeasureCondition) {
-      this.subtype = ThresholdMeasureOptionSubType.PRICE_BASED;
-      this.unit = null;
-    } else {
-      String weightOrVolumeOrUnitBasedThresholdMeasureCondition =
-          ((WeightOrVolumeOrUnitBasedThresholdMeasureCondition) threshold)
-              .getConditionMeasurementUnitCode();
-      String measureUnitCode =
-          StringUtils.isNotBlank(weightOrVolumeOrUnitBasedThresholdMeasureCondition)
-              ? weightOrVolumeOrUnitBasedThresholdMeasureCondition
-              : NO_UNIT_CODE;
-      MeasureUnit measureUnit = MeasureUnit.valueOf(measureUnitCode);
-      if (measureUnit.isVolumeBased()){
-        this.subtype = VOLUME_BASED;
-      } else if (measureUnit.isWeightBased()) {
-        this.subtype = WEIGHT_BASED;
-      } else if (measureUnit.isUnitBased()){
-        this.subtype = UNIT_BASED;
-      } else {
-        throw new IllegalStateException(format("Cannot determine subtype based on measure unit %s", measureUnit.name()));
-      }
-      this.unit = null;
+    var requirementMatcher = REQUIREMENT_REGEX.matcher(requirement);
+    if (!requirementMatcher.find()) {
+      throw new IllegalArgumentException(
+          "Measure condition with requirement " + requirement + " does not match expected format " + REQUIREMENT_REGEX.pattern());
     }
+
+    this.conditionCode = threshold.getConditionCode();
   }
 
   @Override
   public String getDescriptionOverlay() {
-    if (threshold instanceof PricePerUnitBasedThresholdMeasureCondition) {
-      PricePerUnitBasedThresholdMeasureCondition thresholdMeasureCondition =
-          (PricePerUnitBasedThresholdMeasureCondition) threshold;
-      int quantity = Double.valueOf(thresholdMeasureCondition.getConditionDutyAmount()).intValue();
-      final String conditionMeasurementUnitCode =
-          thresholdMeasureCondition.getConditionMeasurementUnitCode();
-      String measureUnitCode =
-          StringUtils.isNotBlank(conditionMeasurementUnitCode)
-              ? conditionMeasurementUnitCode
-              : NO_UNIT_CODE;
-      MeasureUnit measureUnit = MeasureUnit.valueOf(measureUnitCode);
-      final String conditionMonetaryUnitCode = thresholdMeasureCondition.getConditionMonetaryUnitCode();
-      String monetaryUnitCode = StringUtils.isNotBlank(conditionMonetaryUnitCode)? conditionMonetaryUnitCode: "GB";
-      return StringUtils.replace(
-          format(
-              PRICE_PER_UNIT_BASED_DESCRIPTION,
-              conditionCode.getThresholdType() == ThresholdType.MIN ? "more" : "less",
-            MonetaryUnitCode.valueOf(monetaryUnitCode).getSymbol(),
-              quantity,
-              measureUnit.getUnit(locale, 1)),
-          " ,",
-          ",");
-    } else if (threshold instanceof PriceBasedThresholdMeasureCondition) {
-      PriceBasedThresholdMeasureCondition thresholdMeasureCondition =
-          (PriceBasedThresholdMeasureCondition) threshold;
-      int quantity = Double.valueOf(thresholdMeasureCondition.getConditionDutyAmount()).intValue();
-      final String measureUnitCode = thresholdMeasureCondition.getConditionMonetaryUnitCode();
-      String monetaryUnitCode = StringUtils.isNotBlank(measureUnitCode)? measureUnitCode: "GB";
-      return StringUtils.replace(
-          format(
-              PRICE_BASED_DESCRIPTION,
-              conditionCode.getThresholdType() == ThresholdType.MIN ? "more" : "less",
-              MonetaryUnitCode.valueOf(monetaryUnitCode).getSymbol(),
-              quantity),
-          " ,",
-          ",");
-    } else {
-      WeightOrVolumeOrUnitBasedThresholdMeasureCondition thresholdMeasureCondition =
-          (WeightOrVolumeOrUnitBasedThresholdMeasureCondition) threshold;
-      final String conditionMeasurementUnitCode =
-          thresholdMeasureCondition.getConditionMeasurementUnitCode();
-      String measureUnitCode =
-          StringUtils.isNotBlank(conditionMeasurementUnitCode)
-              ? conditionMeasurementUnitCode
-              : NO_UNIT_CODE;
-      MeasureUnit measureUnit = MeasureUnit.valueOf(measureUnitCode);
-      int quantity = Double.valueOf(thresholdMeasureCondition.getConditionDutyAmount()).intValue();
-      return StringUtils.replace(
-          format(
-              WEIGHT_VOLUME_DESCRIPTION_FORMAT,
-              measureUnit.getVerb(locale),
-              conditionCode.getThresholdType() == ThresholdType.MIN ? "more" : "less",
-              quantity,
-              measureUnit.getUnit(locale, quantity)),
-          " ,",
-          ",");
+    var requirementMatcher = REQUIREMENT_REGEX.matcher(requirement);
+    if (requirementMatcher.find()) {
+      var measureUnit = MeasureUnit.getMeasureUnit(requirementMatcher.group(2));
+      String quantity = requirementMatcher.group(1);
+      return format(
+        DESCRIPTION_FORMAT,
+        measureUnit.getVerb(AppConfig.LOCALE),
+        conditionCode.getThresholdType() == ThresholdType.MIN ? "more" : "less",
+        Double.valueOf(quantity).intValue(),
+        measureUnit.getUnit(AppConfig.LOCALE));
     }
+    throw new IllegalArgumentException(
+      "Measure condition with requirement " + requirement + " does not match expected format " + REQUIREMENT_REGEX.pattern());
   }
 }

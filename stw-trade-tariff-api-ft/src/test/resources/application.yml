@@ -16,5 +16,10 @@ application:
   port: 8081
   contextPath:
 
+database:
+  url: jdbc:postgresql://0.0.0.0:5432/signposting
+  user: signposting_user
+  password: password
+
 ---
 

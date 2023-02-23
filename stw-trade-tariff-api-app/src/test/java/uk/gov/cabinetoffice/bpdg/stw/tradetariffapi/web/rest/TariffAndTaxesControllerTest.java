@@ -16,22 +16,19 @@
 
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.web.rest;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.config.ApplicationProperties.CONTEXT_ROOT;
 
 import java.net.URI;
 import java.time.LocalDate;
-import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Function;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -42,17 +39,15 @@ import reactor.core.publisher.Mono;
 import uk.gov.cabinetoffice.bpdg.stw.monitoring.prometheus.metrics.application.InboundRequestMetrics;
 import uk.gov.cabinetoffice.bpdg.stw.monitoring.prometheus.metrics.application.ResourceNameLabelResolver;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.AdditionalCode;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Tax;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.GeographicalArea;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Quota;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Tariff;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TariffAndTaxes;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Tax;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.service.TariffAndTaxesService;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.web.rest.model.TariffAndTaxesRequest;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.web.rest.model.TariffAndTaxesRequest.TariffAndTaxesRequestBuilder;
 
 @WebFluxTest(
     controllers = TariffAndTaxesController.class,
@@ -65,17 +60,19 @@ class TariffAndTaxesControllerTest {
   @MockBean private InboundRequestMetrics inboundRequestMetrics;
   @MockBean private ResourceNameLabelResolver resourceNameLabelResolver;
 
+  @BeforeAll
+  public static void setupBeforeAll() {
+    Locale.setDefault(Locale.ENGLISH);
+  }
+
   @BeforeEach
   void setUp() {
     when(resourceNameLabelResolver.getResourceName(anyString(), anyString()))
         .thenReturn(Optional.of("apiCall"));
   }
 
-  @ParameterizedTest
-  @EnumSource(Locale.class)
-  void
-      shouldGetAllDetailsOfATariffWithOrderingBasedOnMeasureTypeIdGeographicalAreaAdditionalNumberAndQuotaNumber(
-          Locale locale) {
+  @Test
+  void shouldGetAllDetailsOfATariffWithOrderingBasedOnMeasureTypeIdGeographicalAreaAdditionalNumberAndQuotaNumber() {
     TariffAndTaxesRequest request =
         TariffAndTaxesRequest.builder()
             .commodityCode("1006101000")
@@ -83,7 +80,6 @@ class TariffAndTaxesControllerTest {
             .originCountry("CN")
             .destinationCountry(UkCountry.GB)
             .importDate(LocalDate.now())
-            .locale(locale)
             .build();
 
     String tariffText1 = "tariff text1";
@@ -113,11 +109,7 @@ class TariffAndTaxesControllerTest {
                                 .code(additionalCode)
                                 .description(additionalCodeDescription)
                                 .build())
-                        .geographicalArea(
-                            GeographicalArea.builder()
-                                .id(geographicalAreaId1)
-                                .description(geographicalAreaDescription)
-                                .build())
+                        .geographicalArea(GeographicalArea.builder().id(geographicalAreaId1).description(geographicalAreaDescription).build())
                         .quota(Quota.builder().number(quotaNumber).build())
                         .build(),
                     Tariff.builder()
@@ -129,11 +121,7 @@ class TariffAndTaxesControllerTest {
                                 .code(additionalCode)
                                 .description(additionalCodeDescription)
                                 .build())
-                        .geographicalArea(
-                            GeographicalArea.builder()
-                                .id(geographicalAreaId2)
-                                .description(geographicalAreaDescription)
-                                .build())
+                        .geographicalArea(GeographicalArea.builder().id(geographicalAreaId2).description(geographicalAreaDescription).build())
                         .quota(Quota.builder().number(quotaNumber).build())
                         .build(),
                     Tariff.builder()
@@ -145,11 +133,7 @@ class TariffAndTaxesControllerTest {
                                 .code(additionalCode2)
                                 .description(additionalCodeDescription)
                                 .build())
-                        .geographicalArea(
-                            GeographicalArea.builder()
-                                .id(geographicalAreaId2)
-                                .description(geographicalAreaDescription)
-                                .build())
+                        .geographicalArea(GeographicalArea.builder().id(geographicalAreaId2).description(geographicalAreaDescription).build())
                         .quota(Quota.builder().number(quotaNumber).build())
                         .build(),
                     Tariff.builder()
@@ -161,11 +145,7 @@ class TariffAndTaxesControllerTest {
                                 .code(additionalCode2)
                                 .description(additionalCodeDescription)
                                 .build())
-                        .geographicalArea(
-                            GeographicalArea.builder()
-                                .id(geographicalAreaId2)
-                                .description(geographicalAreaDescription)
-                                .build())
+                        .geographicalArea(GeographicalArea.builder().id(geographicalAreaId2).description(geographicalAreaDescription).build())
                         .quota(Quota.builder().number(quotaNumber2).build())
                         .build(),
                     Tariff.builder()
@@ -177,11 +157,7 @@ class TariffAndTaxesControllerTest {
                                 .code(additionalCode)
                                 .description(additionalCodeDescription)
                                 .build())
-                        .geographicalArea(
-                            GeographicalArea.builder()
-                                .id(geographicalAreaId3)
-                                .description(geographicalAreaDescription)
-                                .build())
+                        .geographicalArea(GeographicalArea.builder().id(geographicalAreaId3).description(geographicalAreaDescription).build())
                         .quota(Quota.builder().number(quotaNumber).build())
                         .build()))
             .build();
@@ -270,10 +246,8 @@ class TariffAndTaxesControllerTest {
         .isEqualTo(quotaNumber2);
   }
 
-  @ParameterizedTest
-  @EnumSource(Locale.class)
-  void shouldGetAllDetailsOfTaxesWithOrderingBasedOnMeasureTypeIdGeographicalAreaAndAdditionalCode(
-      Locale locale) {
+  @Test
+  void shouldGetAllDetailsOfTaxesWithOrderingBasedOnMeasureTypeIdGeographicalAreaAndAdditionalCode() {
     TariffAndTaxesRequest request =
         TariffAndTaxesRequest.builder()
             .commodityCode("1006101000")
@@ -281,7 +255,6 @@ class TariffAndTaxesControllerTest {
             .originCountry("CN")
             .destinationCountry(UkCountry.GB)
             .importDate(LocalDate.now())
-            .locale(locale)
             .build();
 
     String dutyText1 = "duty text1";
@@ -388,9 +361,8 @@ class TariffAndTaxesControllerTest {
         .isEqualTo(additionalCodeDescription);
   }
 
-  @ParameterizedTest
-  @EnumSource(Locale.class)
-  void shouldSetTariffAndDuty(Locale locale) {
+  @Test
+  void shouldSetTariffAndDuty() {
     TariffAndTaxesRequest request =
         TariffAndTaxesRequest.builder()
             .commodityCode("1006101000")
@@ -398,7 +370,6 @@ class TariffAndTaxesControllerTest {
             .originCountry("CN")
             .destinationCountry(UkCountry.GB)
             .importDate(LocalDate.now())
-            .locale(locale)
             .build();
 
     String tariffText = "tariff text";
@@ -426,11 +397,7 @@ class TariffAndTaxesControllerTest {
                                 .code(additionalCode)
                                 .description(additionalCodeDescription)
                                 .build())
-                        .geographicalArea(
-                            GeographicalArea.builder()
-                                .id(geographicalAreaId)
-                                .description(geographicalAreaDescription)
-                                .build())
+                        .geographicalArea(GeographicalArea.builder().id(geographicalAreaId).description(geographicalAreaDescription).build())
                         .quota(Quota.builder().number(quotaNumber).build())
                         .build(),
                     Tax.builder()
@@ -480,58 +447,20 @@ class TariffAndTaxesControllerTest {
         .isEqualTo(dutyAdditionalCodeDescription);
   }
 
-  @Test
-  void shouldUseTodayAsTheDateOfTradeAndEnglishLocaleIfNotPassed() {
-    TariffAndTaxesRequestBuilder tariffAndTaxesRequestBuilder =
-        TariffAndTaxesRequest.builder()
-            .commodityCode("1006101000")
-            .tradeType(TradeType.IMPORT)
-            .originCountry("CN")
-            .destinationCountry(UkCountry.GB);
-    TariffAndTaxesRequest request = tariffAndTaxesRequestBuilder.build();
-    TariffAndTaxesRequest expectedRequest =
-        tariffAndTaxesRequestBuilder.locale(Locale.EN).importDate(LocalDate.now()).build();
-
-    ArgumentCaptor<TariffAndTaxesRequest> TariffAndTaxesRequestArgumentCaptor =
-        ArgumentCaptor.forClass(TariffAndTaxesRequest.class);
-    TariffAndTaxes tariffAndTaxes = TariffAndTaxes.builder().duties(Collections.emptyList()).build();
-    when(tariffAndTaxesService.getTariffAndTaxes(TariffAndTaxesRequestArgumentCaptor.capture()))
-        .thenReturn(Mono.just(tariffAndTaxes));
-
-    webTestClient
-        .get()
-        .uri(createRequest(request))
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectBody()
-        .jsonPath("$.tariffs.length()")
-        .isEqualTo(0);
-
-    assertThat(TariffAndTaxesRequestArgumentCaptor.getValue()).isEqualTo(expectedRequest);
-  }
-
   private Function<UriBuilder, URI> createRequest(TariffAndTaxesRequest request) {
-    return builder -> {
-      UriBuilder uriBuilder =
-          builder
-              .path(
-                  String.format(
-                      CONTEXT_ROOT + "/commodities/%s/duties", request.getCommodityCode()))
-              .queryParam("tradeType", request.getTradeType())
-              .queryParam("originCountry", request.getOriginCountry())
-              .queryParam("destinationCountry", request.getDestinationCountry());
-      if (request.getImportDate() != null) {
-        uriBuilder.queryParam(
-            "importDate",
-            String.format(
-                "%tY-%tm-%td",
-                request.getImportDate(), request.getImportDate(), request.getImportDate()));
-      }
-      if (request.getLocale() != null) {
-        uriBuilder.queryParam("locale", request.getLocale().name());
-      }
-      return uriBuilder.build();
-    };
+    return builder ->
+        builder
+            .path(String.format(CONTEXT_ROOT + "/commodities/%s/duties", request.getCommodityCode()))
+            .queryParam("tradeType", request.getTradeType())
+            .queryParam("originCountry", request.getOriginCountry())
+            .queryParam("destinationCountry", request.getDestinationCountry())
+            .queryParam(
+                "importDate",
+                String.format(
+                    "%tY-%tm-%td",
+                    request.getImportDate(),
+                    request.getImportDate(),
+                    request.getImportDate()))
+            .build();
   }
 }

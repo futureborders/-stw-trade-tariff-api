@@ -50,9 +50,12 @@ application:
     timeout: ${STW_SIGNPOSTING_API_OTT_API_TIMEOUT:20s}
     retry-maxAttempt: ${STW_SIGNPOSTING_API_OTT_API_RETRY_COUNT:2}
     retry-minBackoff: ${STW_SIGNPOSTING_API_OTT_API_RETRY_BACK_OFF_DURATION:1s}
+  signposting-content-db:
+    timeout: ${STW_SIGNPOSTING_API_DB_TIMEOUT:2s}
   content-api:
     url: ${STWGS_CONTENT_API_URL}
     timeout: ${STWGS_CONTENT_API_TIMEOUT:PT60S}
+  overlay-content-source: ${OVERLAY_CONTENT_SOURCE:DB}
 
 stw:
   circuit-breaker-config:
@@ -99,9 +102,9 @@ management:
     circuitbreakers.enabled: true
     info.enabled: true
     health:
-      livenessState:
+      livenessstate:
         enabled: true
-      readinessState:
+      readinessstate:
         enabled: true
       show-details: ALWAYS
       probes:

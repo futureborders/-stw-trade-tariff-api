@@ -14,11 +14,19 @@
 
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.config;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Ticker;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
+import java.time.Duration;
+import java.util.Collections;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.caffeine.CaffeineCache;
+import org.springframework.cache.support.SimpleCacheManager;
 import org.springframework.cloud.client.circuitbreaker.ReactiveCircuitBreaker;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,17 +40,24 @@ import uk.gov.cabinetoffice.bpdg.stw.external.hmrc.tradetariff.TradeTariffApi;
 import uk.gov.cabinetoffice.bpdg.stw.monitoring.prometheus.metrics.config.MetricsConfig;
 import uk.gov.cabinetoffice.bpdg.stw.monitoring.prometheus.metrics.downstream.DownstreamEndpointLabelNameResolver;
 import uk.gov.cabinetoffice.bpdg.stw.monitoring.prometheus.metrics.downstream.DownstreamRequestMetrics;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.constants.CacheConstants;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
 
 @Configuration
 @Import({MetricsConfig.class})
 public class AppConfig {
 
-  private final ApplicationProperties applicationProperties;
-  private final DownstreamEndpointLabelNameResolver downstreamEndpointLabelNameResolver;
-  private final DownstreamRequestMetrics downstreamRequestMetrics;
+  public static final Locale LOCALE = Locale.EN;
 
   @Value("${STW_SIGNPOSTING_API_MAX_MEMORY_BUFFER_SIZE:5}")
   private Integer maxInMemorySize; // in MBs
+
+  @Value("${STW_SIGNPOSTING_API_SUPER_HEADER_CACHE_EXPIRY:PT1S}")
+  private Duration superHeaderCacheExpiry;
+
+  private final ApplicationProperties applicationProperties;
+  private final DownstreamEndpointLabelNameResolver downstreamEndpointLabelNameResolver;
+  private final DownstreamRequestMetrics downstreamRequestMetrics;
 
   @Autowired
   public AppConfig(
@@ -87,5 +102,22 @@ public class AppConfig {
                         new ReadTimeoutHandler(
                             (int) applicationProperties.getContentApi().getTimeout().toSeconds())));
     return WebClient.builder().clientConnector(new ReactorClientHttpConnector(httpClient)).build();
+  }
+
+  @Bean
+  public CacheManager cacheManager(final Ticker ticker) {
+    var cacheManager = new SimpleCacheManager();
+    final Cache<Object, Object> cache =
+        Caffeine.newBuilder().expireAfterWrite(superHeaderCacheExpiry).ticker(ticker).build();
+    final CaffeineCache caffeineCache =
+        new CaffeineCache(CacheConstants.SUPER_HEADERS_CACHE, cache);
+    cacheManager.setCaches(Collections.singletonList(caffeineCache));
+    cacheManager.initializeCaches();
+    return cacheManager;
+  }
+
+  @Bean
+  public Ticker ticker() {
+    return Ticker.systemTicker();
   }
 }

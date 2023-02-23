@@ -27,4 +27,5 @@ import lombok.NoArgsConstructor;
 public class MeasureOptions {
 
   List<MeasureOption> options;
+
 }

@@ -17,6 +17,7 @@
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.contentclient.measuretypedescription;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,31 +28,30 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.config.ApplicationProperties;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.model.MeasureTypeDescription;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.repository.MeasureTypeDescriptionRepository;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.repository.MeasureTypeDescriptionContentRepo;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
 
 @Component
 @AllArgsConstructor
 @Slf4j
-public class MeasureTypeDescriptionContentClient implements MeasureTypeDescriptionRepository {
+public class MeasureTypeDescriptionContentClient implements MeasureTypeDescriptionContentRepo {
   private static final String MEASURE_TYPE_DESCRIPTIONS_API_ENDPOINT =
       "/api/v1/measure-type-descriptions";
   private static final String MEASURE_TYPES = "measureTypes";
   private static final String LOCALE = "locale";
-  private static final String TRADE_TYPE = "tradeType";
   private final WebClient webClient;
   private final ApplicationProperties applicationProperties;
 
-  public Flux<MeasureTypeDescription> findMeasureTypeDescriptionsByMeasureTypeIdsAndTradeTypeAndLocale(
-      List<String> measureTypes, TradeType tradeType, Locale locale) {
+  @Override
+  public Flux<MeasureTypeDescription> findByMeasureTypeIdInAndLocaleAndPublished(
+      List<String> measureTypes, Locale locale, boolean published) {
     var contentApiConfiguration = applicationProperties.getContentApi();
     log.debug(
-        "Calling the content api with baseUrl: {}, api path: {}, measureTypes: {}, tradeType: {} and locale: {}",
+        "Calling the content api with baseUrl: {}, api path: {}, measureTypes: {} and locale: {}",
         contentApiConfiguration.getUrl(),
         MEASURE_TYPE_DESCRIPTIONS_API_ENDPOINT,
         measureTypes,
-        tradeType,
         locale);
     final Mono<MeasureTypeDescriptionResponseDTO> resultMono =
         webClient
@@ -65,7 +65,6 @@ public class MeasureTypeDescriptionContentClient implements MeasureTypeDescripti
                         .path(MEASURE_TYPE_DESCRIPTIONS_API_ENDPOINT)
                         .queryParam(MEASURE_TYPES, String.join(",", measureTypes))
                         .queryParam(LOCALE, locale.name())
-                        .queryParam(TRADE_TYPE, tradeType.name())
                         .build())
             .accept(MediaType.APPLICATION_JSON)
             .retrieve()
@@ -73,9 +72,8 @@ public class MeasureTypeDescriptionContentClient implements MeasureTypeDescripti
             .onErrorResume(
                 ex -> {
                   log.error(
-                      "Error occurred while fetching measure type descriptions for measure types : {} by tradeType: {} and locale : {}",
+                      "Error occurred while fetching measure type descriptions and measure types : {} by locale : {}",
                       measureTypes,
-                      tradeType,
                       locale,
                       ex);
                   return Mono.empty();
@@ -92,6 +90,8 @@ public class MeasureTypeDescriptionContentClient implements MeasureTypeDescripti
                                 .locale(Locale.valueOf(measureTypeDescriptionDTO.getLocale()))
                                 .descriptionOverlay(
                                     measureTypeDescriptionDTO.getDescriptionOverlay())
+                                .published(true)
+                                .destinationCountryRestrictions(Set.of(UkCountry.GB, UkCountry.XI))
                                 .build())
                     .collect(Collectors.toList())));
   }

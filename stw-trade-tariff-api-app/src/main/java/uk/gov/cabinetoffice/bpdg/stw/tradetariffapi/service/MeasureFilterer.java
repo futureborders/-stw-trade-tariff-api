@@ -31,7 +31,7 @@ import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
 public class MeasureFilterer {
 
   private static final List<String> RESTRICTIVE_MEASURE_TYPE_ID_EXCLUSION_LIST =
-      List.of("464", "481", "482", "483", "484", "495", "496", "730");
+      List.of("464", "481", "482", "483",  "484", "495", "496", "730");
   private static final List<String> RESTRICTIVE_MEASURE_TYPE_SERIES_LIST =
       List.of(MEASURE_TYPE_SERIES_ID_A, MEASURE_TYPE_SERIES_ID_B);
 
@@ -42,8 +42,7 @@ public class MeasureFilterer {
       List<Measure> measures, TradeType tradeType, String tradeDestinationCountry) {
     List<Measure> filteredMeasuresByTradeTypeAndAllowedSeriesIdAndDisallowedMeasureId =
         measures.stream()
-            .filter(
-                measureResponse -> measureResponse.getApplicableTradeTypes().contains(tradeType))
+            .filter(measureResponse -> measureResponse.getApplicableTradeTypes().contains(tradeType))
             .filter(
                 measure ->
                     RESTRICTIVE_MEASURE_TYPE_SERIES_LIST.contains(
@@ -94,7 +93,8 @@ public class MeasureFilterer {
     List<Measure> filteredMeasuresByTradeTypeAndAllowedSeriesIdAndDisallowedMeasureId =
         measures.stream()
             .filter(
-                measureResponse -> measureResponse.getApplicableTradeTypes().contains(tradeType))
+                measureResponse ->
+                    measureResponse.getApplicableTradeTypes().contains(tradeType))
             .filter(
                 measure ->
                     TAX_AND_DUTY_MEASURE_TYPE_SERIES_LIST.contains(

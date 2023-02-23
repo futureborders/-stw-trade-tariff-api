@@ -14,9 +14,10 @@
 
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.config;
 
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class MeasureFilterConstantsConfig {
 
   public static final String MEASURE_TYPE_SERIES_ID_A = "A";

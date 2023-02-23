@@ -1,6 +1,6 @@
 {
   "request": {
-    "url": "/api/v1/document-code-descriptions?documentCodes=C015&locale=EN&tradeType=IMPORT",
+    "url": "/api/v1/document-code-descriptions?documentCodes=C015&locale=EN",
     "method": "GET"
   },
   "response": {

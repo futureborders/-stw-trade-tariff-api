@@ -25,8 +25,9 @@ import org.junit.jupiter.api.Test;
 class SystemClockTest {
 
   @Test
-  void shouldGetTheCurrentDate() {
+  void shouldGetTheCurrentDate(){
     SystemClock systemClock = new SystemClock();
     assertThat(systemClock.currentLocalDate()).isEqualTo(LocalDate.now());
   }
+
 }

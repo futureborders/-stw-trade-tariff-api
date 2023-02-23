@@ -21,14 +21,12 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.DocumentaryMeasureCondition;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureCondition;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureConditionCode;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureOptions;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.NegativeMeasureCondition;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.service.measureoptions.ComplexMeasureOptionHandler;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.service.measureoptions.MultipleMeasureOptionsHandler;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.service.measureoptions.SingleMeasureOptionHandler;
@@ -45,51 +43,40 @@ public class MeasureOptionService {
 
   @Autowired
   public MeasureOptionService(
-      MultipleMeasureOptionsHandler multipleMeasureOptionsHandler,
-      SingleMeasureOptionHandler singleMeasureOptionHandler,
-      ComplexMeasureOptionHandler complexMeasureHandler) {
+    MultipleMeasureOptionsHandler multipleMeasureOptionsHandler,
+    SingleMeasureOptionHandler singleMeasureOptionHandler,
+    ComplexMeasureOptionHandler complexMeasureHandler) {
     this.multipleMeasureOptionsHandler = multipleMeasureOptionsHandler;
     this.singleMeasureOptionHandler = singleMeasureOptionHandler;
     this.complexMeasureHandler = complexMeasureHandler;
   }
 
   public Flux<MeasureOptions> getMeasureOptions(
-      List<MeasureCondition> measureConditions, TradeType tradeType, Locale locale) {
-
-    List<MeasureCondition> positiveMeasureConditions =
-        measureConditions.stream()
-            .filter(measureCondition -> !(measureCondition instanceof NegativeMeasureCondition))
-            .collect(Collectors.toList());
+    List<MeasureCondition> measureConditions, UkCountry destinationUkCountry) {
 
     Set<MeasureConditionCode> conditionCodes =
-        positiveMeasureConditions.stream()
-            .map(MeasureCondition::getConditionCode)
-            .collect(Collectors.toSet());
+      measureConditions.stream()
+        .map(MeasureCondition::getConditionCode)
+        .collect(Collectors.toSet());
 
     return conditionCodes.size() <= 1
-        ? Flux.from(
-            singleMeasureOptionHandler.getMeasureOption(
-                positiveMeasureConditions, tradeType, locale))
-        : isAComplexMeasure(positiveMeasureConditions)
-            ? Flux.from(
-                complexMeasureHandler.getMeasureOption(
-                    positiveMeasureConditions, tradeType, locale))
-            : multipleMeasureOptionsHandler.getMeasureOptions(
-                positiveMeasureConditions, tradeType, locale);
+      ? Flux.from(
+      singleMeasureOptionHandler.getMeasureOption(measureConditions, destinationUkCountry))
+      : isAComplexMeasure(measureConditions)
+      ? Flux.from(
+      complexMeasureHandler.getMeasureOption(measureConditions, destinationUkCountry))
+      : multipleMeasureOptionsHandler.getMeasureOptions(measureConditions, destinationUkCountry);
   }
 
   private boolean isAComplexMeasure(List<MeasureCondition> measureConditions) {
-    Map<String, List<DocumentaryMeasureCondition>> documentaryMeasureConditionsByDocumentCode =
-        measureConditions.stream()
-            .filter(DocumentaryMeasureCondition.class::isInstance)
-            .map(DocumentaryMeasureCondition.class::cast)
-            // don't treat CDS universal waiver as complex as they are not set up correctly
-            .filter(
-                measureCondition ->
-                    !CDS_UNIVERSAL_WAIVER.equals(measureCondition.getDocumentCode()))
-            .collect(Collectors.groupingBy(DocumentaryMeasureCondition::getDocumentCode));
+    Map<String, List<MeasureCondition>> measureConditionsByDocumentCode =
+      measureConditions.stream()
+        .filter(measureCondition -> StringUtils.hasLength(measureCondition.getDocumentCode()))
+        // don't treat CDS universal waiver as complex as they are not set up correctly
+        .filter(measureCondition -> !CDS_UNIVERSAL_WAIVER.equals(measureCondition.getDocumentCode()))
+        .collect(Collectors.groupingBy(MeasureCondition::getDocumentCode));
 
-    return documentaryMeasureConditionsByDocumentCode.values().stream()
-        .anyMatch(documentaryMeasureConditions -> documentaryMeasureConditions.size() > 1);
+    return measureConditionsByDocumentCode.values().stream()
+      .anyMatch(measureConditionsList -> measureConditionsList.size() > 1);
   }
 }

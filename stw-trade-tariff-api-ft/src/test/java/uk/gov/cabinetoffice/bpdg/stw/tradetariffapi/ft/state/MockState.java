@@ -15,7 +15,6 @@
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.ft.state;
 
 public interface MockState {
-  void prime();
-
-  void reset();
+    void prime();
+    void reset();
 }

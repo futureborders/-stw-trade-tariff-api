@@ -8,6 +8,7 @@ services:
     image: stw/stw-trade-tariff-api-app
     container_name: stw-trade-tariff-api-app
     depends_on:
+      - postgres-ft
       - wiremock-ft
     command: java -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=0.0.0.0:8000,suspend=n -jar /opt/app.jar
     ports:
@@ -16,6 +17,18 @@ services:
       - "9000:9000"
     environment:
       - SPRING_PROFILES_ACTIVE=local
+      - SIGNPOSTING_DB_URL=postgres-ft
+
+  postgres-ft:
+    build:
+      context: postgres
+      dockerfile: postgres-11.6.Dockerfile
+    networks:
+      - stw
+    image: stw/stw-trade-tariff-api-postgres
+    container_name: stw-trade-tariff-api-postgres-ft
+    ports:
+      - "5432:5432"
 
   wiremock-ft:
     build:

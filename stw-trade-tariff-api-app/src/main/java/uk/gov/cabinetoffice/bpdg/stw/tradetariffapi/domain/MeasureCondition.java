@@ -15,37 +15,46 @@
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AccessLevel;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
+import java.util.List;
+import java.util.Set;
+import lombok.Builder;
+import lombok.Value;
+import org.springframework.util.StringUtils;
 
-@SuperBuilder
-@EqualsAndHashCode
-@ToString
-public abstract class MeasureCondition {
+@Builder
+@Value
+public class MeasureCondition {
 
-  @Getter(AccessLevel.PUBLIC)
+  private static final Set<String> EXCEPTION_DOCUMENT_CODES = Set.of("C084", "9009", "9010", "9011", "9015", "9016", "9020", "9021", "999L");
+
   String id;
-
   MeasureConditionCode conditionCode;
-
-  @Getter(AccessLevel.PUBLIC)
   String condition;
-
-  @Getter(AccessLevel.PUBLIC)
+  String documentCode;
   String requirement;
-
-  @Getter(AccessLevel.PUBLIC)
   String action;
+  String dutyExpression;
 
-  public abstract MeasureConditionType getMeasureConditionType();
+  public MeasureConditionType getMeasureConditionType() {
+    if (StringUtils.hasLength(documentCode)
+      && !documentCode.startsWith("Y")
+      && !EXCEPTION_DOCUMENT_CODES.contains(documentCode)) {
+      return MeasureConditionType.CERTIFICATE;
+    }
+    if (StringUtils.hasLength(documentCode)
+      && (documentCode.startsWith("Y") || EXCEPTION_DOCUMENT_CODES.contains(documentCode))) {
+      return MeasureConditionType.EXCEPTION;
+    }
+    if (!StringUtils.hasLength(documentCode) && StringUtils.hasLength(requirement)) {
+      return MeasureConditionType.THRESHOLD;
+    }
+    return MeasureConditionType.NEGATIVE;
+  }
 
   @JsonIgnore
-  public abstract String getMeasureConditionKey();
-
-  public MeasureConditionCode getConditionCode() {
-    return conditionCode;
+  public String getMeasureConditionKey() {
+    return StringUtils.hasLength(this.getDocumentCode())
+      ? this.getDocumentCode()
+      : this.getRequirement();
   }
 }

@@ -18,9 +18,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.web.reactive.config.EnableWebFlux;
 import org.springframework.web.reactive.config.WebFluxConfigurer;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.web.converter.LocaleStringToEnumConverter;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.web.converter.TradeTypeStringToEnumConverter;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.web.converter.UkCountryStringToEnumConverter;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.web.converter.UserTypeStringToEnumConverter;
 
 @Configuration
 @EnableWebFlux
@@ -28,8 +28,8 @@ public class WebFluxConfig implements WebFluxConfigurer {
 
   @Override
   public void addFormatters(FormatterRegistry registry) {
-    registry.addConverter(new LocaleStringToEnumConverter());
     registry.addConverter(new TradeTypeStringToEnumConverter());
+    registry.addConverter(new UserTypeStringToEnumConverter());
     registry.addConverter(new UkCountryStringToEnumConverter());
   }
 }

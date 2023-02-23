@@ -35,7 +35,6 @@ public class GetMeasuresRequestEntity extends RequestEntity {
   String destinationCountry;
   String additionalCode;
   String importDate;
-  String locale;
 
   @Override
   public Map<String, String> getHeaders() {
@@ -45,7 +44,12 @@ public class GetMeasuresRequestEntity extends RequestEntity {
   @Override
   public String path() {
     return buildUri(
-        commodityCode, tradeType, originCountry, destinationCountry, additionalCode, importDate, locale);
+        commodityCode,
+        tradeType,
+        originCountry,
+        destinationCountry,
+        additionalCode,
+        importDate);
   }
 
   private String buildUri(
@@ -53,9 +57,7 @@ public class GetMeasuresRequestEntity extends RequestEntity {
       String tradeType,
       String originCountry,
       String destinationCountry,
-      String additionalCode,
-      String tradeDate,
-      String locale) {
+      String additionalCode,String importDate) {
     StringBuilder stringBuilder = new StringBuilder(CONTEXT_ROOT + "/v1/commodities");
     if (StringUtils.isNotBlank(commodityCode)) {
       stringBuilder.append("/").append(commodityCode);
@@ -79,11 +81,8 @@ public class GetMeasuresRequestEntity extends RequestEntity {
       if (StringUtils.isNotBlank(additionalCode)) {
         stringBuilder.append("&additionalCode=").append(additionalCode);
       }
-      if (StringUtils.isNotBlank(tradeDate)) {
-        stringBuilder.append("&tradeDate=").append(tradeDate);
-      }
-      if (StringUtils.isNotBlank(locale)) {
-        stringBuilder.append("&locale=").append(locale);
+      if (StringUtils.isNotBlank(importDate)) {
+        stringBuilder.append("&importDate=").append(importDate);
       }
     }
     return stringBuilder.toString();

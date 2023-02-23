@@ -15,5 +15,5 @@
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.ft.state;
 
 public interface Payload {
-  String toText();
+    String toText();
 }

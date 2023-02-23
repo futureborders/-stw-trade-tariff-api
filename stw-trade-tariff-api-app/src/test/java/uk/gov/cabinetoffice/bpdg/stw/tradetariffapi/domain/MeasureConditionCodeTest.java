@@ -61,26 +61,24 @@ public class MeasureConditionCodeTest {
 
   @ParameterizedTest
   @MethodSource("measureConditionCodesArgument")
-  void shouldGetAppropriateMeasureConditionCode(
-      String measureConditionCode, MeasureConditionCode expectedMeasureConditionCode) {
+  void shouldGetAppropriateMeasureConditionCode(String measureConditionCode, MeasureConditionCode expectedMeasureConditionCode){
     // when
-    MeasureConditionCode actualMeasureConditionCode =
-        MeasureConditionCode.from(measureConditionCode);
+    MeasureConditionCode actualMeasureConditionCode = MeasureConditionCode.from(measureConditionCode);
 
     // then
     assertThat(actualMeasureConditionCode).isEqualTo(expectedMeasureConditionCode);
   }
 
   @Test
-  void shouldGetUNKNOWNMeasureConditionCodeIfNotRecognisedByGS() {
+  void shouldGetUNKNOWNMeasureConditionCodeIfNotRecognisedByGS(){
     // given
     String measureConditionCode = "AA";
 
     // when
-    MeasureConditionCode actualMeasureConditionCode =
-        MeasureConditionCode.from(measureConditionCode);
+    MeasureConditionCode actualMeasureConditionCode = MeasureConditionCode.from(measureConditionCode);
 
     // then
     assertThat(actualMeasureConditionCode).isEqualTo(MeasureConditionCode.UNKNOWN);
   }
+
 }

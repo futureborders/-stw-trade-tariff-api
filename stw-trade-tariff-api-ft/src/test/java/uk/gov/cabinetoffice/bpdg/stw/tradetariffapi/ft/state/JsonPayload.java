@@ -18,12 +18,12 @@ import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.ft.state.util.JsonUtils;
 
 public interface JsonPayload extends uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.ft.state.Payload {
 
-  default String toJsonString() {
-    return JsonUtils.asJsonString(this);
-  }
+    default String toJsonString() {
+        return JsonUtils.asJsonString(this);
+    }
 
-  @Override
-  default String toText() {
-    return toJsonString();
-  }
+    @Override
+    default String toText() {
+        return toJsonString();
+    }
 }

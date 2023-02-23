@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 class CommodityHelperTest {
 
   @Test
-  void shouldAppend00ForCommodityWhichIsOf8Digits() {
+  void shouldAppend00ForCommodityWhichIsOf8Digits(){
     // given
     String eightDigitCommodityCode = "12345678";
 
@@ -36,8 +36,9 @@ class CommodityHelperTest {
   }
 
   @Test
-  void shouldReturnCommodityAsIsIfItIsNotOf8Digits() {
+  void shouldReturnCommodityAsIsIfItIsNotOf8Digits(){
     assertThat(CommodityHelper.tidyCommodityCode("1234567")).isEqualTo("1234567");
     assertThat(CommodityHelper.tidyCommodityCode("123456789")).isEqualTo("123456789");
   }
+
 }

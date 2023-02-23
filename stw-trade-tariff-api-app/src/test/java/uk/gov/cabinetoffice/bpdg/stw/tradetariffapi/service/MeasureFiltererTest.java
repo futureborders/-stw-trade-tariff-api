@@ -39,39 +39,6 @@ public class MeasureFiltererTest {
   class FilterRestrictiveMeasures {
 
     @Test
-    @DisplayName(
-        "Trade Type as IMPORT and measures are assigned to a group country where there are no countries assigned")
-    void shouldIgnoreMeasureWhereGeographicalAreaIsGroupAndNoCountriesUnderThem() {
-      Measure geographicalAreaWithNoCountriesMeasures =
-          Measure.builder()
-              .id("1")
-              .measureType(
-                  MeasureType.builder().id("1").seriesId("B").description("Measure Type 1").build())
-              .applicableTradeTypes(List.of(TradeType.IMPORT))
-              .geographicalArea(GeographicalArea.builder().description("").id("1080").build())
-              .build();
-      Measure measureRelatedToUSA =
-          Measure.builder()
-              .id("2")
-              .measureType(
-                  MeasureType.builder().id("2").seriesId("B").description("Measure Type 2").build())
-              .applicableTradeTypes(List.of(TradeType.IMPORT))
-              .geographicalArea(
-                  GeographicalArea.builder()
-                      .description("United States of America")
-                      .id("US")
-                      .build())
-              .build();
-
-      List<Measure> measureResponse =
-          List.of(geographicalAreaWithNoCountriesMeasures, measureRelatedToUSA);
-
-      List<Measure> filteredMeasures =
-          measureFilterer.getRestrictiveMeasures(measureResponse, TradeType.IMPORT, "US");
-      assertThat(filteredMeasures).containsExactlyInAnyOrder(measureRelatedToUSA);
-    }
-
-    @Test
     @DisplayName("Trade Type as IMPORT and measures are assigned to a single country")
     void importSingleCountry() {
       Measure measureRelatedToChina =
@@ -119,7 +86,11 @@ public class MeasureFiltererTest {
               .measureType(
                   MeasureType.builder().id("2").seriesId("B").description("Measure Type 2").build())
               .applicableTradeTypes(List.of(TradeType.IMPORT, TradeType.EXPORT))
-              .geographicalArea(GeographicalArea.builder().description("China").id("CN").build())
+              .geographicalArea(
+                  GeographicalArea.builder()
+                      .description("China")
+                      .id("CN")
+                      .build())
               .build();
       Measure measureRelatedToImportsOnly =
           Measure.builder()
@@ -127,24 +98,22 @@ public class MeasureFiltererTest {
               .measureType(
                   MeasureType.builder().id("3").seriesId("B").description("Measure Type 3").build())
               .applicableTradeTypes(List.of(TradeType.IMPORT))
-              .geographicalArea(GeographicalArea.builder().description("China").id("CN").build())
+              .geographicalArea(
+                  GeographicalArea.builder()
+                      .description("China")
+                      .id("CN")
+                      .build())
               .build();
 
-      List<Measure> measureResponse =
-          List.of(
-              measureRelatedToExportOnly,
-              measureRelatedToImportAndExport,
-              measureRelatedToImportsOnly);
+      List<Measure> measureResponse = List.of(measureRelatedToExportOnly, measureRelatedToImportAndExport, measureRelatedToImportsOnly);
 
       List<Measure> filteredMeasures =
           measureFilterer.getRestrictiveMeasures(measureResponse, TradeType.IMPORT, "CN");
-      assertThat(filteredMeasures)
-          .containsExactlyInAnyOrder(measureRelatedToImportAndExport, measureRelatedToImportsOnly);
+      assertThat(filteredMeasures).containsExactlyInAnyOrder(measureRelatedToImportAndExport, measureRelatedToImportsOnly);
 
       filteredMeasures =
           measureFilterer.getRestrictiveMeasures(measureResponse, TradeType.EXPORT, "CN");
-      assertThat(filteredMeasures)
-          .containsExactlyInAnyOrder(measureRelatedToImportAndExport, measureRelatedToExportOnly);
+      assertThat(filteredMeasures).containsExactlyInAnyOrder(measureRelatedToImportAndExport, measureRelatedToExportOnly);
     }
 
     @Test
@@ -200,8 +169,7 @@ public class MeasureFiltererTest {
               .build();
 
       List<Measure> filteredMeasures =
-          measureFilterer.getRestrictiveMeasures(
-              List.of(measureRelatedToErgaOmnes), TradeType.IMPORT, "FR");
+          measureFilterer.getRestrictiveMeasures(List.of(measureRelatedToErgaOmnes), TradeType.IMPORT, "FR");
       assertThat(filteredMeasures).containsExactlyInAnyOrder(measureRelatedToErgaOmnes);
     }
 
@@ -298,7 +266,7 @@ public class MeasureFiltererTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"464", "481", "482", "483", "484", "495", "496", "730"})
+    @ValueSource(strings = {"464", "481", "482", "483",  "484", "495", "496", "730"})
     void shouldExcludeDisallowedMeasureId(String disallowedMeasureId) {
       Measure measureWithDisallowedId =
           Measure.builder()
@@ -322,7 +290,10 @@ public class MeasureFiltererTest {
               .geographicalArea(GeographicalArea.builder().description("China").id("CN").build())
               .build();
 
-      List<Measure> measureResponse = List.of(measureWithDisallowedId, seriesIdAMeasure);
+      List<Measure> measureResponse =
+          List.of(
+              measureWithDisallowedId,
+              seriesIdAMeasure);
 
       List<Measure> filteredMeasures =
           measureFilterer.getRestrictiveMeasures(measureResponse, TradeType.IMPORT, "CN");
@@ -417,8 +388,7 @@ public class MeasureFiltererTest {
               .build();
 
       List<Measure> filteredMeasures =
-          measureFilterer.getTaxAndDutyMeasures(
-              List.of(measureRelatedToErgaOmnes), TradeType.IMPORT, "FR");
+          measureFilterer.getTaxAndDutyMeasures(List.of(measureRelatedToErgaOmnes), TradeType.IMPORT, "FR");
       assertThat(filteredMeasures).containsExactlyInAnyOrder(measureRelatedToErgaOmnes);
     }
 
@@ -465,8 +435,7 @@ public class MeasureFiltererTest {
           measureFilterer.getTaxAndDutyMeasures(
               List.of(
                   measureRelatedToChina, measureRelatedToGSP, measureRelatedToSomeOtherCountries),
-              TradeType.IMPORT,
-              "KE");
+              TradeType.IMPORT, "KE");
       assertThat(filteredMeasures)
           .containsExactlyInAnyOrder(measureRelatedToChina, measureRelatedToGSP);
     }

@@ -48,115 +48,106 @@ public class ProhibitionContentService {
   @PostConstruct
   public void initializeProhibitionContent() {
     prohibitionDescriptions =
-        prohibitionContentRepository.findAll().collectList().subscribeOn(Schedulers.single());
+      prohibitionContentRepository.findAll().collectList().subscribeOn(Schedulers.single());
   }
 
   public Mono<List<Prohibition>> getProhibitions(
-      List<Measure> restrictedMeasures,
-      final String originCountry,
-      final Locale locale,
-      TradeType tradeType) {
+    List<Measure> restrictedMeasures, final String originCountry, final Locale locale, TradeType tradeType) {
     Mono<Tuple2<List<Measure>, List<ProhibitionDescription>>>
-        measureAndProhibitionDescriptionTuple2Mono =
-            Mono.zip(
-                Mono.just(
-                    restrictedMeasures.stream()
-                        .filter(this::filterProhibitiveMeasures)
-                        .collect(Collectors.toList())),
-                prohibitionDescriptions);
+      measureAndProhibitionDescriptionTuple2Mono =
+      Mono.zip(
+        Mono.just(
+          restrictedMeasures.stream()
+            .filter(this::filterProhibitiveMeasures)
+            .collect(Collectors.toList())),
+        prohibitionDescriptions);
 
     return measureAndProhibitionDescriptionTuple2Mono.flatMap(
-        measureAndProhibitionDescriptionTuple2 -> {
-          var prohibitedMeasures = measureAndProhibitionDescriptionTuple2.getT1();
-          var prohibitionDescriptions = measureAndProhibitionDescriptionTuple2.getT2();
-          return Mono.just(
-              prohibitedMeasures.stream()
-                  .map(
-                      measure ->
-                          Tuples.of(
-                              measure,
-                              this.getProhibitionDescription(
-                                  measure,
-                                  prohibitionDescriptions,
-                                  originCountry,
-                                  locale,
-                                  tradeType)))
-                  .map(this::prohibition)
-                  .collect(Collectors.toList()));
-        });
+      measureAndProhibitionDescriptionTuple2 -> {
+        var prohibitedMeasures = measureAndProhibitionDescriptionTuple2.getT1();
+        var prohibitionDescriptions = measureAndProhibitionDescriptionTuple2.getT2();
+        return Mono.just(
+          prohibitedMeasures.stream()
+            .map(
+              measure ->
+                Tuples.of(
+                  measure,
+                  this.getProhibitionDescription(
+                    measure, prohibitionDescriptions, originCountry, locale, tradeType)))
+            .map(this::prohibition)
+            .collect(Collectors.toList()));
+      });
   }
 
   private Prohibition prohibition(
-      Tuple2<Measure, ProhibitionDescription> measureWithProhibitionDescriptionTuple2) {
+    Tuple2<Measure, ProhibitionDescription> measureWithProhibitionDescriptionTuple2) {
     var measure = measureWithProhibitionDescriptionTuple2.getT1();
     var prohibitionDescription = measureWithProhibitionDescriptionTuple2.getT2();
     return Prohibition.builder()
-        .legalAct(prohibitionDescription.getLegalAct())
-        .description(prohibitionDescription.getDescription())
-        .measureTypeSeries(measure.getMeasureType().getSeriesId())
-        .measureTypeId(measure.getMeasureType().getId())
-        .id(measure.getMeasureType().getId())
-        .build();
+      .legalAct(prohibitionDescription.getLegalAct())
+      .description(prohibitionDescription.getDescription())
+      .measureTypeSeries(measure.getMeasureType().getSeriesId())
+      .measureTypeId(measure.getMeasureType().getId())
+      .id(measure.getMeasureType().getId())
+      .build();
   }
 
   private boolean filterProhibitiveMeasures(Measure measure) {
     return MEASURE_TYPE_SERIES_ID_A.equals(measure.getMeasureType().getSeriesId())
-        || (MEASURE_TYPE_SERIES_ID_B.equals(measure.getMeasureType().getSeriesId())
-            && (measure.getAdditionalCode().isEmpty()
-                || !measure.getAdditionalCode().get().isResidual())
-            && measure.getMeasureConditions().isEmpty());
+      || (MEASURE_TYPE_SERIES_ID_B.equals(measure.getMeasureType().getSeriesId())
+      && (measure.getAdditionalCode().isEmpty()
+      || !measure.getAdditionalCode().get().isResidual())
+      && measure.getMeasureConditions().isEmpty());
   }
 
   private ProhibitionDescription getProhibitionDescription(
-      Measure measure,
-      List<ProhibitionDescription> prohibitionDescriptions,
-      String originCountry,
-      Locale locale,
-      TradeType tradeType) {
+    Measure measure,
+    List<ProhibitionDescription> prohibitionDescriptions,
+    String originCountry,
+    Locale locale,
+    TradeType tradeType) {
     return StringUtils.isBlank(measure.getLegalActId())
-        ? defaultProhibitionDescription(originCountry, null)
-        : prohibitionDescription(
-            prohibitionDescriptions, originCountry, locale, measure.getLegalActId(), tradeType);
+      ? defaultProhibitionDescription(originCountry, null)
+      : prohibitionDescription(
+        prohibitionDescriptions, originCountry, locale, measure.getLegalActId(), tradeType);
   }
 
   private ProhibitionDescription prohibitionDescription(
-      List<ProhibitionDescription> prohibitionDescriptions,
-      String originCountry,
-      Locale locale,
-      String legalAct,
-      TradeType tradeType) {
+    List<ProhibitionDescription> prohibitionDescriptions,
+    String originCountry,
+    Locale locale,
+    String legalAct,
+    TradeType tradeType) {
     List<ProhibitionDescription> prohibitionDescriptionsByTradeType =
         prohibitionDescriptions.stream()
-            .filter(
-                prohibitionDescription ->
-                    prohibitionDescription.getApplicableTradeTypes().contains(tradeType))
+            .filter(prohibitionDescription -> prohibitionDescription.getApplicableTradeTypes().contains(tradeType))
             .collect(Collectors.toList());
     return prohibitionDescriptionsByTradeType.stream()
-        .filter(byOriginCountryAndLocaleAndLegalAct(originCountry, locale, legalAct))
-        .findFirst()
-        .orElse(
-            prohibitionDescriptionsByTradeType.stream()
-                .filter(byLocaleAndLegalAct(locale, legalAct))
-                .findFirst()
-                .orElse(defaultProhibitionDescription(originCountry, legalAct)));
+      .filter(byOriginCountryAndLocaleAndLegalAct(originCountry, locale, legalAct))
+      .findFirst()
+      .orElse(
+          prohibitionDescriptionsByTradeType.stream()
+          .filter(byLocaleAndLegalAct(locale, legalAct))
+          .findFirst()
+          .orElse(defaultProhibitionDescription(originCountry, legalAct)));
   }
 
   private ProhibitionDescription defaultProhibitionDescription(
-      String originCountry, String legalAct) {
+    String originCountry, String legalAct) {
     return ProhibitionDescription.builder().legalAct(legalAct).originCountry(originCountry).build();
   }
 
   private Predicate<ProhibitionDescription> byLocaleAndLegalAct(Locale locale, String legalAct) {
     return (ProhibitionDescription prohibitionDescription) ->
-        prohibitionDescription.getLegalAct().contains(legalAct)
-            && prohibitionDescription.getLocale().equals(locale);
+      prohibitionDescription.getLegalAct().contains(legalAct)
+        && prohibitionDescription.getLocale().equals(locale);
   }
 
   private Predicate<ProhibitionDescription> byOriginCountryAndLocaleAndLegalAct(
-      String originCountry, Locale locale, String legalAct) {
+    String originCountry, Locale locale, String legalAct) {
     return (ProhibitionDescription prohibitionDescription) ->
-        prohibitionDescription.getLegalAct().contains(legalAct)
-            && originCountry.equals(prohibitionDescription.getOriginCountry())
-            && prohibitionDescription.getLocale().equals(locale);
+      prohibitionDescription.getLegalAct().contains(legalAct)
+        && originCountry.equals(prohibitionDescription.getOriginCountry())
+        && prohibitionDescription.getLocale().equals(locale);
   }
 }

@@ -16,7 +16,18 @@ package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain;
 
 public interface MeasureOption {
 
+  default String getId() {
+    return null;
+  }
+
+  default String getCertificateCode() {
+    return null;
+  }
+
+
+
   MeasureOptionType getType();
 
   String getDescriptionOverlay();
+
 }

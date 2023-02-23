@@ -23,7 +23,7 @@ import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.model.DocumentCodeDescri
 public class ExceptionMeasureOption extends DocumentCodeMeasureOption {
 
   private static final String EXCEPTION_MEASURE_OPTION_END_DESCRIPTION =
-      ", then your goods are exempt.";
+    ", then your goods are exempt.";
 
   @Builder(builderMethodName = "exceptionMeasureOptionBuilder")
   public ExceptionMeasureOption(DocumentCodeDescription documentCodeDescription) {
@@ -35,14 +35,11 @@ public class ExceptionMeasureOption extends DocumentCodeMeasureOption {
   public String getDescriptionOverlay() {
 
     if (StringUtils.startsWithIgnoreCase(descriptionOverlay, "Your")) {
-      return
-          StringUtils.replaceOnceIgnoreCase(
-            StringUtils.replace(StringUtils.removeEndIgnoreCase(descriptionOverlay, "."), "Your", "If your")
-              + EXCEPTION_MEASURE_OPTION_END_DESCRIPTION,
-          "\n,",
-          ",");
+      return StringUtils.replaceOnceIgnoreCase(
+        StringUtils.removeEndIgnoreCase(descriptionOverlay, "."), "Your", "If your")
+        + EXCEPTION_MEASURE_OPTION_END_DESCRIPTION;
     } else {
-      return StringUtils.replace(descriptionOverlay, "\n,", ",");
+      return descriptionOverlay;
     }
   }
 }

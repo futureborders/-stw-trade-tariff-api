@@ -27,25 +27,25 @@ public class MultiCertificateMeasureOptionTest {
 
   private static Stream<Arguments> documentCodeDescriptionCombinations() {
     return Stream.of(
-        Arguments.of(
-            null, "You need 2nd certificate document.", "You need 2nd certificate document."),
-        Arguments.of(
-            "You need 1st certificate document.", null, "You need 1st certificate document."),
-        Arguments.of(
-            "", "You need 2nd certificate document.", "You need 2nd certificate document."),
-        Arguments.of(
-            "You need 1st certificate document.", "", "You need 1st certificate document."),
-        Arguments.of(null, null, null),
-        Arguments.of("", "", null));
+      Arguments.of(
+        null, "You need 2nd certificate document.", "You need 2nd certificate document."),
+      Arguments.of(
+        "You need 1st certificate document.", null, "You need 1st certificate document."),
+      Arguments.of(
+        "", "You need 2nd certificate document.", "You need 2nd certificate document."),
+      Arguments.of(
+        "You need 1st certificate document.", "", "You need 1st certificate document."),
+      Arguments.of(null, null, null),
+      Arguments.of("", "", null));
   }
 
   @Test
   void shouldReturnBothDocumentCodes() {
     MultiCertificateMeasureOption multiCertificateMeasureOption =
-        MultiCertificateMeasureOption.builder()
-            .certificate1(DocumentCodeDescription.builder().documentCode("C669").build())
-            .certificate2(DocumentCodeDescription.builder().documentCode("C670").build())
-            .build();
+      MultiCertificateMeasureOption.builder()
+        .certificate1(DocumentCodeDescription.builder().documentCode("C669").build())
+        .certificate2(DocumentCodeDescription.builder().documentCode("C670").build())
+        .build();
 
     assertThat(multiCertificateMeasureOption.getCertificateCode()).isEqualTo("C669 & C670");
   }
@@ -53,42 +53,43 @@ public class MultiCertificateMeasureOptionTest {
   @Test
   void shouldReturnCombinedDescriptions() {
     MultiCertificateMeasureOption multiCertificateMeasureOption =
-        MultiCertificateMeasureOption.builder()
-            .certificate1(
-                DocumentCodeDescription.builder()
-                    .documentCode("C669")
-                    .descriptionOverlay("You need document C669 for this trade.")
-                    .build())
-            .certificate2(
-                DocumentCodeDescription.builder()
-                    .documentCode("C670")
-                    .descriptionOverlay("You need document C670 for this trade.")
-                    .build())
-            .build();
+      MultiCertificateMeasureOption.builder()
+        .certificate1(
+          DocumentCodeDescription.builder()
+            .documentCode("C669")
+            .descriptionOverlay("You need document C669 for this trade.")
+            .build())
+        .certificate2(
+          DocumentCodeDescription.builder()
+            .documentCode("C670")
+            .descriptionOverlay("You need document C670 for this trade.")
+            .build())
+        .build();
 
     assertThat(multiCertificateMeasureOption.getDescriptionOverlay())
-        .isEqualTo(
-            "You need document C669 for this trade and you need document C670 for this trade.");
+      .isEqualTo(
+        "You need document C669 for this trade and you need document C670 for this trade.");
   }
 
   @ParameterizedTest
   @MethodSource("documentCodeDescriptionCombinations")
   void shouldReturnSingleDescriptionWhenOneIsEmptyOrNull(
-      String firstCertDesc, String secondCertDesc, String expectedDesc) {
+    String firstCertDesc, String secondCertDesc, String expectedDesc) {
     MultiCertificateMeasureOption multiCertificateMeasureOption =
-        MultiCertificateMeasureOption.builder()
-            .certificate1(
-                DocumentCodeDescription.builder()
-                    .documentCode("C669")
-                    .descriptionOverlay(firstCertDesc)
-                    .build())
-            .certificate2(
-                DocumentCodeDescription.builder()
-                    .documentCode("C670")
-                    .descriptionOverlay(secondCertDesc)
-                    .build())
-            .build();
+      MultiCertificateMeasureOption.builder()
+        .certificate1(
+          DocumentCodeDescription.builder()
+            .documentCode("C669")
+            .descriptionOverlay(firstCertDesc)
+            .build())
+        .certificate2(
+          DocumentCodeDescription.builder()
+            .documentCode("C670")
+            .descriptionOverlay(secondCertDesc)
+            .build())
+        .build();
 
     assertThat(multiCertificateMeasureOption.getDescriptionOverlay()).isEqualTo(expectedDesc);
   }
+
 }

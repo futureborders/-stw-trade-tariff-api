@@ -20,8 +20,8 @@ import java.time.LocalDate;
 import java.util.Optional;
 import lombok.Builder;
 import lombok.Value;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
 
 @Value
 @Builder
@@ -33,9 +33,9 @@ public class MeasuresRequest {
   TradeType tradeType;
   String additionalCode;
   LocalDate dateOfTrade;
-  Locale locale;
 
   public Optional<String> getAdditionalCode() {
     return Optional.ofNullable(additionalCode);
   }
+
 }

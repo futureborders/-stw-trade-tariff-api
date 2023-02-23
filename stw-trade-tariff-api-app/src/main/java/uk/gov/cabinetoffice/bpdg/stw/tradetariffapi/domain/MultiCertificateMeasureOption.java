@@ -39,12 +39,13 @@ public class MultiCertificateMeasureOption implements MeasureOption {
 
   @Builder
   public MultiCertificateMeasureOption(
-      @NonNull DocumentCodeDescription certificate1,
-      @NonNull DocumentCodeDescription certificate2) {
+    @NonNull DocumentCodeDescription certificate1,
+    @NonNull DocumentCodeDescription certificate2) {
     this.certificate1 = certificate1;
     this.certificate2 = certificate2;
   }
 
+  @Override
   public String getCertificateCode() {
     return certificate1.getDocumentCode() + " & " + certificate2.getDocumentCode();
   }
@@ -52,18 +53,19 @@ public class MultiCertificateMeasureOption implements MeasureOption {
   @Override
   public String getDescriptionOverlay() {
     return StringUtils.isNotBlank(certificate1.getDescriptionOverlay())
-            && StringUtils.isNotBlank(certificate2.getDescriptionOverlay())
-        ? StringUtils.removeEndIgnoreCase(certificate1.getDescriptionOverlay(), ".")
-            + " and "
-            + StringUtils.replace(
-                certificate2.getDescriptionOverlay(),
-                StringUtils.split(certificate2.getDescriptionOverlay(), ' ')[0],
-                StringUtils.lowerCase(
-                    StringUtils.split(certificate2.getDescriptionOverlay(), ' ')[0]))
-        : StringUtils.isBlank(certificate2.getDescriptionOverlay())
-            ? StringUtils.isNotBlank(certificate1.getDescriptionOverlay())
-                ? certificate1.getDescriptionOverlay()
-                : null
-            : certificate2.getDescriptionOverlay();
+      && StringUtils.isNotBlank(certificate2.getDescriptionOverlay())
+      ? StringUtils.removeEndIgnoreCase(certificate1.getDescriptionOverlay(), ".")
+      + " and "
+      + StringUtils.replace(
+      certificate2.getDescriptionOverlay(),
+      StringUtils.split(certificate2.getDescriptionOverlay(), ' ')[0],
+      StringUtils.lowerCase(
+        StringUtils.split(certificate2.getDescriptionOverlay(), ' ')[0]))
+      : StringUtils.isBlank(certificate2.getDescriptionOverlay())
+        ? StringUtils.isNotBlank(certificate1.getDescriptionOverlay())
+        ? certificate1.getDescriptionOverlay()
+        : null
+        : certificate2.getDescriptionOverlay();
   }
+
 }

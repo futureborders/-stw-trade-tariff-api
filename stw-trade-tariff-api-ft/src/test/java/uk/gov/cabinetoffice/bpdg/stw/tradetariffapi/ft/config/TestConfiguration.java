@@ -23,6 +23,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.spi.json.JsonProvider;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.sql.DataSource;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -37,11 +41,21 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.orm.jpa.JpaVendorAdapter;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
+import org.springframework.transaction.PlatformTransactionManager;
 
 @Lazy
 @EnableConfigurationProperties({WiremockProperties.class, AppProperties.class})
 @Configuration
 @ComponentScan(basePackages = {"uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.ft.*"})
+@EnableJpaRepositories(
+    value = "uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.ft.dao",
+    entityManagerFactoryRef = "emf")
 @SuppressWarnings({"unchecked", "lgtm[java/uncaught-number-format-exception]"})
 public class TestConfiguration {
 
@@ -52,6 +66,7 @@ public class TestConfiguration {
 
   @Autowired private WiremockProperties wiremockProperties;
   @Autowired private AppProperties appProperties;
+  @Autowired private DatabaseProperties databaseProperties;
 
   @Value("${RUNNING_ON_CI:false}")
   private boolean runningOnCi;
@@ -139,5 +154,60 @@ public class TestConfiguration {
   @Bean
   public com.jayway.jsonpath.Configuration jaywayConfig() {
     return builder().options(Option.DEFAULT_PATH_LEAF_TO_NULL, Option.SUPPRESS_EXCEPTIONS).build();
+  }
+
+  @Bean(name = "emf")
+  public LocalContainerEntityManagerFactoryBean EntityManagerFactory() {
+    LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
+    em.setDataSource(dataSource());
+    em.setPackagesToScan(new String[] {"uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.ft.dao"});
+
+    JpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
+    em.setJpaVendorAdapter(vendorAdapter);
+
+    return em;
+  }
+
+  @Bean
+  public DataSource dataSource() {
+    Matcher matcher = Pattern.compile("(//)(.*:)(\\d+)(/)").matcher(databaseProperties.getUrl());
+    Optional<String> publicPort =
+        matcher.find() ? Optional.ofNullable(matcher.group(3)) : Optional.empty();
+
+    DriverManagerDataSource dataSource = new DriverManagerDataSource();
+    dataSource.setDriverClassName("org.postgresql.Driver");
+    dataSource.setUrl(
+        runningOnCi
+            ? databaseProperties
+            .getUrl()
+            .replaceFirst(
+                "(//)(.*)(:)(\\d+)(/.*)",
+                String.format(
+                    "$1%s$3%s$5",
+                    dockerConfigClient.containerIpAddress(
+                        NETWORK, projectSuffix, "stw-trade-tariff-api-postgres-ft"),
+                    dockerConfigClient.containerPrivatePort(
+                        NETWORK,
+                        projectSuffix,
+                        "stw-trade-tariff-api-postgres-ft",
+                        publicPort
+                            .map(Integer::valueOf)
+                            .orElseThrow(
+                                () ->
+                                    new RuntimeException(
+                                        String.format(
+                                            "Not able to get public port for database from database url '%s'",
+                                            databaseProperties.getUrl()))))))
+            : databaseProperties.getUrl());
+    dataSource.setUsername(databaseProperties.getUser());
+    dataSource.setPassword(databaseProperties.getPassword());
+    return dataSource;
+  }
+
+  @Bean(name = "transactionManager")
+  public PlatformTransactionManager dbTransactionManager() {
+    JpaTransactionManager transactionManager = new JpaTransactionManager();
+    transactionManager.setEntityManagerFactory(EntityManagerFactory().getObject());
+    return transactionManager;
   }
 }

@@ -30,6 +30,7 @@
     <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
   </appender>
 
+  <logger name="io.r2dbc" level="INFO"/>
   <logger name="jdk.event.security" level="WARN"/>
   <logger name="javax.activation" level="WARN"/>
   <logger name="javax.mail" level="WARN"/>
@@ -53,6 +54,8 @@
   <logger name="sun.rmi" level="WARN"/>
   <logger name="sun.net.www" level="INFO"/>
   <logger name="sun.rmi.transport" level="WARN"/>
+  <logger name="io.r2dbc.postgresql.QUERY" level="ERROR"/>
+  <logger name="io.r2dbc.postgresql.PARAM" level="ERROR"/>
 
   <!-- https://logback.qos.ch/manual/configuration.html#shutdownHook and https://jira.qos.ch/browse/LOGBACK-1090 -->
   <shutdownHook class="ch.qos.logback.core.hook.DelayingShutdownHook"/>

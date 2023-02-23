@@ -22,9 +22,8 @@ import static org.mockito.Mockito.when;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -33,11 +32,10 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import uk.gov.cabinetoffice.bpdg.stw.external.hmrc.tradetariff.model.commodity.TradeTariffCommodityResponse;
 import uk.gov.cabinetoffice.bpdg.stw.external.hmrc.tradetariff.model.commodity.TradeTariffCommodityResponseData;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Tax;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Measure;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureType;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TariffAndTaxes;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Tax;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.exception.ResourceNotFoundException;
@@ -56,105 +54,103 @@ class TariffAndTaxesServiceTest {
 
   @InjectMocks private TariffAndTaxesService tariffAndTaxesService;
 
-  @ParameterizedTest
-  @EnumSource(Locale.class)
+  @Test
   @DisplayName("Taxes should be displayed for commodities imported to GB")
-  void shouldReturnTaxesApplicableToTheCommodityForImportsToGB(Locale locale) {
+  void shouldReturnTaxesApplicableToTheCommodityForImportsToGB() {
     // given
     LocalDate dateOfImport = LocalDate.now();
     UkCountry destinationCountry = UkCountry.GB;
     TariffAndTaxesRequest tariffAndTaxesRequest =
-        TariffAndTaxesRequest.builder()
-            .destinationCountry(destinationCountry)
-            .commodityCode(COMMODITY_CODE)
-            .tradeType(TradeType.IMPORT)
-            .importDate(dateOfImport)
-            .locale(locale)
-            .build();
+      TariffAndTaxesRequest.builder()
+        .destinationCountry(destinationCountry)
+        .commodityCode(COMMODITY_CODE)
+        .importDate(dateOfImport)
+        .build();
 
     TradeTariffCommodityResponse tradeTariffCommodityResponse =
-        TradeTariffCommodityResponse.builder()
-            .data(TradeTariffCommodityResponseData.builder().id("1234").type("commodity").build())
-            .build();
+      TradeTariffCommodityResponse.builder()
+        .data(TradeTariffCommodityResponseData.builder().id("1234").type("commodity").build())
+        .build();
 
     Measure restrictiveMeasure =
-        Measure.builder()
-            .measureType(MeasureType.builder().seriesId("A").build())
-            .taxMeasure(false)
-            .applicableTradeTypes(List.of(TradeType.IMPORT))
-            .build();
+      Measure.builder()
+        .measureType(MeasureType.builder().seriesId("A").build())
+        .taxMeasure(false)
+        .applicableTradeTypes(List.of(TradeType.IMPORT))
+        .build();
     Measure dutyMeasure =
-        Measure.builder()
-            .measureType(MeasureType.builder().seriesId("C").build())
-            .taxMeasure(true)
-            .applicableTradeTypes(List.of(TradeType.IMPORT))
-            .build();
+      Measure.builder()
+        .measureType(MeasureType.builder().seriesId("C").build())
+        .taxMeasure(true)
+        .applicableTradeTypes(List.of(TradeType.IMPORT))
+        .build();
+
     Tax tax = Tax.builder().build();
 
     List<Measure> measures = List.of(restrictiveMeasure, dutyMeasure);
 
     when(tradeTariffApiGateway.getCommodity(COMMODITY_CODE, dateOfImport, destinationCountry))
-        .thenReturn(Mono.just(tradeTariffCommodityResponse));
-    when(measureBuilder.from(tradeTariffCommodityResponse, COMMODITY_CODE)).thenReturn(measures);
-    when(measureFilterer.getTaxAndDutyMeasures(
-            measures,
-            tariffAndTaxesRequest.getTradeType(),
-            tariffAndTaxesRequest.getOriginCountry()))
-        .thenReturn(List.of(dutyMeasure));
-    when(dutyMeasureService.getTariffsAndTaxesMeasures(List.of(dutyMeasure), TradeType.IMPORT, locale))
-        .thenReturn(Flux.just(tax));
+      .thenReturn(Mono.just(tradeTariffCommodityResponse));
+    when(measureBuilder.from(tradeTariffCommodityResponse)).thenReturn(measures);
+    when(measureFilterer.getTaxAndDutyMeasures(measures, tariffAndTaxesRequest.getTradeType(), tariffAndTaxesRequest.getOriginCountry()))
+      .thenReturn(List.of(dutyMeasure));
+    when(dutyMeasureService.getTariffsAndTaxesMeasures(
+      List.of(dutyMeasure), tariffAndTaxesRequest.getDestinationCountry()))
+      .thenReturn(Flux.just(tax));
     // when and then
     StepVerifier.create(tariffAndTaxesService.getTariffAndTaxes(tariffAndTaxesRequest))
-        .expectNext(TariffAndTaxes.builder().duties(List.of(tax)).build())
-        .verifyComplete();
+      .expectNext(
+        TariffAndTaxes.builder()
+          .duties(List.of(tax))
+          .build())
+      .verifyComplete();
   }
 
-  @ParameterizedTest
-  @EnumSource(Locale.class)
+  @Test
   @DisplayName("Taxes should not be displayed for commodities imported to XI as they are complex")
-  void shouldReturnEmptyTaxesForImportsToNorthernIreland(Locale locale) {
+  void shouldReturnEmptyTaxesForImportsToNorthernIreland() {
     // given
     LocalDate dateOfImport = LocalDate.now();
     TariffAndTaxesRequest tariffAndTaxesRequest =
-        TariffAndTaxesRequest.builder()
-            .destinationCountry(UkCountry.XI)
-            .commodityCode(COMMODITY_CODE)
-            .importDate(dateOfImport)
-            .locale(locale)
-            .build();
+      TariffAndTaxesRequest.builder()
+        .destinationCountry(UkCountry.XI)
+        .commodityCode(COMMODITY_CODE)
+        .importDate(dateOfImport)
+        .build();
 
     // when and then
     StepVerifier.create(tariffAndTaxesService.getTariffAndTaxes(tariffAndTaxesRequest))
-        .expectNext(TariffAndTaxes.builder().duties(List.of()).build())
-        .verifyComplete();
+      .expectNext(
+        TariffAndTaxes.builder()
+          .duties(List.of())
+          .build())
+      .verifyComplete();
   }
 
-  @ParameterizedTest
-  @EnumSource(Locale.class)
-  void shouldReturnResourceNotFoundExceptionWhenCommodityNotFound(Locale locale) {
+  @Test
+  void shouldReturnResourceNotFoundExceptionWhenCommodityNotFound() {
     // given
     LocalDate dateOfImport = LocalDate.now();
     UkCountry destinationCountry = UkCountry.GB;
     TariffAndTaxesRequest tariffAndTaxesRequest =
-        TariffAndTaxesRequest.builder()
-            .destinationCountry(destinationCountry)
-            .commodityCode(COMMODITY_CODE)
-            .importDate(dateOfImport)
-            .locale(locale)
-            .build();
+      TariffAndTaxesRequest.builder()
+        .destinationCountry(destinationCountry)
+        .commodityCode(COMMODITY_CODE)
+        .importDate(dateOfImport)
+        .build();
 
     when(tradeTariffApiGateway.getCommodity(COMMODITY_CODE, dateOfImport, destinationCountry))
-        .thenReturn(Mono.error(new ResourceNotFoundException("Commodity", COMMODITY_CODE)));
+      .thenReturn(Mono.error(new ResourceNotFoundException("Commodity", COMMODITY_CODE)));
 
     // when and then
     StepVerifier.create(tariffAndTaxesService.getTariffAndTaxes(tariffAndTaxesRequest))
-        .expectErrorMatches(
-            error ->
-                error instanceof ResourceNotFoundException
-                    && error
-                        .getMessage()
-                        .equals(
-                            format("Resource 'Commodity' not found with id '%s'", COMMODITY_CODE)))
-        .verify();
+      .expectErrorMatches(
+        error ->
+          error instanceof ResourceNotFoundException
+            && error
+            .getMessage()
+            .equals(
+              format("Resource 'Commodity' not found with id '%s'", COMMODITY_CODE)))
+      .verify();
   }
 }

@@ -103,22 +103,12 @@ public class AdditionalCodesController {
           @DateTimeFormat(pattern = "yyyy-MM-dd")
           @RequestParam(required = false)
           LocalDate tradeDate) {
-    if (tradeType == TradeType.IMPORT
-        && Arrays.stream(UkCountry.values())
-            .noneMatch(ukCountry -> destinationCountry.equals(ukCountry.name()))) {
-      return Mono.error(
-          new ValidationException(
-              "destinationCountry",
-              format("Destination country %s is not a valid UK country", destinationCountry)));
+    if(tradeType == TradeType.IMPORT && Arrays.stream(UkCountry.values()).noneMatch(ukCountry -> destinationCountry.equals(ukCountry.name()))){
+      return Mono.error(new ValidationException("destinationCountry", format("Destination country %s is not a valid UK country", destinationCountry)));
     }
 
-    if (tradeType == TradeType.EXPORT
-        && Arrays.stream(UkCountry.values())
-            .noneMatch(ukCountry -> originCountry.equals(ukCountry.name()))) {
-      return Mono.error(
-          new ValidationException(
-              "originCountry",
-              format("Origin country %s is not a valid UK country", originCountry)));
+    if(tradeType == TradeType.EXPORT && Arrays.stream(UkCountry.values()).noneMatch(ukCountry -> originCountry.equals(ukCountry.name()))){
+      return Mono.error(new ValidationException("originCountry", format("Origin country %s is not a valid UK country", originCountry)));
     }
 
     return additionalCodesService

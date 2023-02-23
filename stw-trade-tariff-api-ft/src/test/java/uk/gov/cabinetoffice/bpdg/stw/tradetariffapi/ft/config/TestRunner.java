@@ -22,6 +22,7 @@ import static org.awaitility.Durations.TWO_SECONDS;
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
 import lombok.extern.slf4j.Slf4j;
+import org.flywaydb.core.Flyway;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.springframework.context.ApplicationContext;
@@ -48,8 +49,7 @@ public class TestRunner {
   @BeforeClass
   public static void setUp() {
     log.info("Test setup - initialising context");
-    ApplicationContext applicationContext =
-        new AnnotationConfigApplicationContext("uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.ft");
+    ApplicationContext applicationContext = new AnnotationConfigApplicationContext("uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.ft");
     log.info("Retrieving the app from the context");
     AppUnderTest app = applicationContext.getBean(AppUnderTest.class);
     log.info("Waiting for application to start");
@@ -60,7 +60,9 @@ public class TestRunner {
         .atMost(60, SECONDS)
         .until(() -> appIsUp(app));
 
-    log.info("Application started.");
+    log.info("Application started. Applying migrations");
+    Flyway flyway = applicationContext.getBean(Flyway.class);
+    flyway.migrate();
   }
 
   private static Boolean appIsUp(AppUnderTest app) {

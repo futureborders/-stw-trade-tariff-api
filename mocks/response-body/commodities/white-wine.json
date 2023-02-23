@@ -7058,13 +7058,13 @@
         "condition_code": "E",
         "condition": "E: The quantity or the price per unit declared, as appropriate, is equal or less than the specified maximum, or presentation of the required document",
         "document_code": "",
-        "requirement": "<span>30.00</span> <abbr title='Kilogram'>kg</abbr>",
+        "requirement": "<span>100.00</span>",
         "action": "Entry into free circulation allowed",
         "duty_expression": "",
-        "condition_duty_amount": 30,
+        "condition_duty_amount": 100.0,
         "condition_monetary_unit_code": null,
         "monetary_unit_abbreviation": null,
-        "condition_measurement_unit_code": "KGM",
+        "condition_measurement_unit_code": "LTR",
         "condition_measurement_unit_qualifier_code": null
       },
       "relationships": {

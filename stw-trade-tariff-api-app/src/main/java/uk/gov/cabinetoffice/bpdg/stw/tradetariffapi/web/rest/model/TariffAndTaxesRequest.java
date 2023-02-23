@@ -17,7 +17,6 @@ package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.web.rest.model;
 import java.time.LocalDate;
 import lombok.Builder;
 import lombok.Value;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
 
@@ -30,5 +29,4 @@ public class TariffAndTaxesRequest {
   UkCountry destinationCountry;
   TradeType tradeType;
   LocalDate importDate;
-  Locale locale;
 }

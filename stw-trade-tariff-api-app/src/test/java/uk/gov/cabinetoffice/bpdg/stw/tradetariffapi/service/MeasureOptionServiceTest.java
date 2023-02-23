@@ -14,14 +14,11 @@
 
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.service;
 
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType.IMPORT;
-
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -30,13 +27,11 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.model.DocumentCodeDescription;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.DocumentCodeMeasureOption;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.DocumentaryMeasureCondition;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ExceptionMeasureOption;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureCondition;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureConditionCode;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureOptions;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.NegativeMeasureCondition;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.service.measureoptions.ComplexMeasureOptionHandler;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.service.measureoptions.MultipleMeasureOptionsHandler;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.service.measureoptions.SingleMeasureOptionHandler;
@@ -45,8 +40,6 @@ import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.service.measureoptions.Singl
 public class MeasureOptionServiceTest {
 
   private static final String CDS_WAIVER = "999L";
-  private static final NegativeMeasureCondition NEGATIVE_CONDITION =
-      NegativeMeasureCondition.builder().build();
 
   @Mock private SingleMeasureOptionHandler singleMeasureOptionHandler;
   @Mock private ComplexMeasureOptionHandler complexMeasureOptionHandler;
@@ -55,359 +48,350 @@ public class MeasureOptionServiceTest {
   private MeasureOptionService measureOptionService;
 
   @BeforeEach
-  public void setUp() {
-    measureOptionService =
-        new MeasureOptionService(
-            multipleMeasureOptionsHandler, singleMeasureOptionHandler, complexMeasureOptionHandler);
+  public void setUp(){
+    measureOptionService = new MeasureOptionService(multipleMeasureOptionsHandler, singleMeasureOptionHandler, complexMeasureOptionHandler);
   }
 
   @Nested
   class GetMeasureOptions {
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    void shouldProcessMeasuresWithOneConditionCode(Locale locale) {
+    @Test
+    void shouldProcessMeasuresWithOneConditionCode() {
       MeasureConditionCode bMeasureConditionCode = MeasureConditionCode.B;
       String documentCode = "C123";
       MeasureCondition certificateMeasureConditionWithMeasureConditionB =
-          DocumentaryMeasureCondition.builder()
-              .id("1000")
-              .conditionCode(bMeasureConditionCode)
-              .documentCode(documentCode)
-              .requirement("certificate requirement")
-              .build();
+        MeasureCondition.builder()
+          .id("1000")
+          .conditionCode(bMeasureConditionCode)
+          .documentCode(documentCode)
+          .requirement("certificate requirement")
+          .build();
+
+      UkCountry destinationUkCountry = UkCountry.GB;
 
       MeasureOptions measureOptionForB =
-          MeasureOptions.builder()
-              .options(
-                  List.of(
-                      DocumentCodeMeasureOption.builder()
-                          .totalNumberOfCertificates(1)
-                          .documentCodeDescription(
-                              DocumentCodeDescription.builder().documentCode(documentCode).build())
-                          .build()))
-              .build();
+        MeasureOptions.builder()
+          .options(
+            List.of(
+              DocumentCodeMeasureOption.builder()
+                .totalNumberOfCertificates(1)
+                .documentCodeDescription(
+                  DocumentCodeDescription.builder().documentCode(documentCode).build())
+                .build()))
+          .build();
       Mockito.when(
-              singleMeasureOptionHandler.getMeasureOption(
-                  List.of(certificateMeasureConditionWithMeasureConditionB), IMPORT, locale))
-          .thenReturn(Mono.just(measureOptionForB));
+          singleMeasureOptionHandler.getMeasureOption(
+            List.of(certificateMeasureConditionWithMeasureConditionB), destinationUkCountry))
+        .thenReturn(Mono.just(measureOptionForB));
 
       StepVerifier.create(
-              measureOptionService.getMeasureOptions(
-                  List.of(certificateMeasureConditionWithMeasureConditionB, NEGATIVE_CONDITION),
-                  IMPORT, locale))
-          .expectNext(measureOptionForB)
-          .verifyComplete();
+          measureOptionService.getMeasureOptions(
+            List.of(certificateMeasureConditionWithMeasureConditionB), destinationUkCountry))
+        .expectNext(measureOptionForB)
+        .verifyComplete();
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    void shouldProcessMeasuresWithMoreThanOneConditionCode(Locale locale) {
+    @Test
+    void shouldProcessMeasuresWithMoreThanOneConditionCode() {
       String documentCode1 = "C123";
       String documentCode2 = "C223";
 
       MeasureConditionCode bMeasureConditionCode = MeasureConditionCode.B;
       MeasureCondition certificateMeasureConditionWithMeasureConditionB =
-          DocumentaryMeasureCondition.builder()
-              .id("1000")
-              .conditionCode(bMeasureConditionCode)
-              .documentCode(documentCode1)
-              .requirement("certificate requirement")
-              .build();
+        MeasureCondition.builder()
+          .id("1000")
+          .conditionCode(bMeasureConditionCode)
+          .documentCode(documentCode1)
+          .requirement("certificate requirement")
+          .build();
       MeasureConditionCode cMeasureConditionCode = MeasureConditionCode.C;
       MeasureCondition certificateMeasureConditionWithMeasureConditionC =
-          DocumentaryMeasureCondition.builder()
-              .id("1000")
-              .conditionCode(cMeasureConditionCode)
-              .documentCode(documentCode2)
-              .requirement("certificate requirement")
-              .build();
+        MeasureCondition.builder()
+          .id("1000")
+          .conditionCode(cMeasureConditionCode)
+          .documentCode(documentCode2)
+          .requirement("certificate requirement")
+          .build();
+
+      UkCountry destinationUkCountry = UkCountry.GB;
 
       MeasureOptions measureOptionForB =
-          MeasureOptions.builder()
-              .options(
-                  List.of(
-                      DocumentCodeMeasureOption.builder()
-                          .totalNumberOfCertificates(1)
-                          .documentCodeDescription(
-                              DocumentCodeDescription.builder().documentCode(documentCode1).build())
-                          .build()))
-              .build();
+        MeasureOptions.builder()
+          .options(
+            List.of(
+              DocumentCodeMeasureOption.builder()
+                .totalNumberOfCertificates(1)
+                .documentCodeDescription(
+                  DocumentCodeDescription.builder().documentCode(documentCode1).build())
+                .build()))
+          .build();
       MeasureOptions measureOptionForC =
-          MeasureOptions.builder()
-              .options(
-                  List.of(
-                      DocumentCodeMeasureOption.builder()
-                          .totalNumberOfCertificates(1)
-                          .documentCodeDescription(
-                              DocumentCodeDescription.builder().documentCode(documentCode2).build())
-                          .build()))
-              .build();
+        MeasureOptions.builder()
+          .options(
+            List.of(
+              DocumentCodeMeasureOption.builder()
+                .totalNumberOfCertificates(1)
+                .documentCodeDescription(
+                  DocumentCodeDescription.builder().documentCode(documentCode2).build())
+                .build()))
+          .build();
       Mockito.when(
-              multipleMeasureOptionsHandler.getMeasureOptions(
-                  List.of(
-                      certificateMeasureConditionWithMeasureConditionB,
-                      certificateMeasureConditionWithMeasureConditionC),
-                  IMPORT,
-                  locale))
-          .thenReturn(Flux.just(measureOptionForB, measureOptionForC));
+          multipleMeasureOptionsHandler.getMeasureOptions(
+            List.of(
+              certificateMeasureConditionWithMeasureConditionB,
+              certificateMeasureConditionWithMeasureConditionC),
+            destinationUkCountry))
+        .thenReturn(Flux.just(measureOptionForB, measureOptionForC));
 
       StepVerifier.create(
-              measureOptionService.getMeasureOptions(
-                  List.of(
-                      certificateMeasureConditionWithMeasureConditionB,
-                      certificateMeasureConditionWithMeasureConditionC,
-                      NEGATIVE_CONDITION),
-                  IMPORT,
-                  locale))
-          .expectNext(measureOptionForB, measureOptionForC)
-          .verifyComplete();
+          measureOptionService.getMeasureOptions(
+            List.of(
+              certificateMeasureConditionWithMeasureConditionB,
+              certificateMeasureConditionWithMeasureConditionC),
+            destinationUkCountry))
+        .expectNext(measureOptionForB, measureOptionForC)
+        .verifyComplete();
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    void shouldProcessMeasuresWhichSharesDocumentCodes(Locale locale) {
+    @Test
+    void shouldProcessMeasuresWhichSharesDocumentCodes() {
       String commonDocumentCode = "C111";
       String documentCode1 = "C123";
       String documentCode2 = "C223";
 
       MeasureConditionCode bMeasureConditionCode = MeasureConditionCode.B;
       MeasureCondition certificateWithMeasureConditionB =
-          DocumentaryMeasureCondition.builder()
-              .id("1000")
-              .conditionCode(bMeasureConditionCode)
-              .documentCode(documentCode1)
-              .requirement("certificate requirement")
-              .build();
+        MeasureCondition.builder()
+          .id("1000")
+          .conditionCode(bMeasureConditionCode)
+          .documentCode(documentCode1)
+          .requirement("certificate requirement")
+          .build();
       MeasureCondition commonCertificateWithMeasureConditionB =
-          DocumentaryMeasureCondition.builder()
-              .id("1000")
-              .conditionCode(bMeasureConditionCode)
-              .documentCode(commonDocumentCode)
-              .requirement("certificate requirement")
-              .build();
+        MeasureCondition.builder()
+          .id("1000")
+          .conditionCode(bMeasureConditionCode)
+          .documentCode(commonDocumentCode)
+          .requirement("certificate requirement")
+          .build();
       MeasureConditionCode cMeasureConditionCode = MeasureConditionCode.C;
       MeasureCondition certificateWithMeasureConditionC =
-          DocumentaryMeasureCondition.builder()
-              .id("1000")
-              .conditionCode(cMeasureConditionCode)
-              .documentCode(documentCode2)
-              .requirement("certificate requirement")
-              .build();
+        MeasureCondition.builder()
+          .id("1000")
+          .conditionCode(cMeasureConditionCode)
+          .documentCode(documentCode2)
+          .requirement("certificate requirement")
+          .build();
       MeasureCondition commonCertificateWithMeasureConditionC =
-          DocumentaryMeasureCondition.builder()
-              .id("1000")
-              .conditionCode(cMeasureConditionCode)
-              .documentCode(commonDocumentCode)
-              .requirement("certificate requirement")
-              .build();
+        MeasureCondition.builder()
+          .id("1000")
+          .conditionCode(cMeasureConditionCode)
+          .documentCode(commonDocumentCode)
+          .requirement("certificate requirement")
+          .build();
+
+      UkCountry destinationUkCountry = UkCountry.GB;
 
       MeasureOptions complexMeasureOption =
-          MeasureOptions.builder()
-              .options(
-                  List.of(
-                      DocumentCodeMeasureOption.builder()
-                          .documentCodeDescription(DocumentCodeDescription.builder().build())
-                          .build()))
-              .build();
+        MeasureOptions.builder()
+          .options(
+            List.of(
+              DocumentCodeMeasureOption.builder()
+                .documentCodeDescription(DocumentCodeDescription.builder().build())
+                .build()))
+          .build();
       Mockito.when(
-              complexMeasureOptionHandler.getMeasureOption(
-                  List.of(
-                      certificateWithMeasureConditionB,
-                      commonCertificateWithMeasureConditionB,
-                      certificateWithMeasureConditionC,
-                      commonCertificateWithMeasureConditionC),
-                  IMPORT,
-                  locale))
-          .thenReturn(Mono.just(complexMeasureOption));
+          complexMeasureOptionHandler.getMeasureOption(
+            List.of(
+              certificateWithMeasureConditionB,
+              commonCertificateWithMeasureConditionB,
+              certificateWithMeasureConditionC,
+              commonCertificateWithMeasureConditionC),
+            destinationUkCountry))
+        .thenReturn(Mono.just(complexMeasureOption));
 
       StepVerifier.create(
-              measureOptionService.getMeasureOptions(
-                  List.of(
-                      certificateWithMeasureConditionB,
-                      commonCertificateWithMeasureConditionB,
-                      certificateWithMeasureConditionC,
-                      commonCertificateWithMeasureConditionC,
-                      NEGATIVE_CONDITION),
-                  IMPORT,
-                  locale))
-          .expectNext(complexMeasureOption)
-          .verifyComplete();
+          measureOptionService.getMeasureOptions(
+            List.of(
+              certificateWithMeasureConditionB,
+              commonCertificateWithMeasureConditionB,
+              certificateWithMeasureConditionC,
+              commonCertificateWithMeasureConditionC),
+            destinationUkCountry))
+        .expectNext(complexMeasureOption)
+        .verifyComplete();
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    void shouldTreatAsMultipleMeasuresWhen999LConditionCodesIsTheOnlyOneShared(Locale locale) {
+    @Test
+    void shouldTreatAsMultipleMeasuresWhen999LConditionCodesIsTheOnlyOneShared() {
       String documentCode1 = "C123";
       String documentCode2 = "C223";
 
       MeasureConditionCode bMeasureConditionCode = MeasureConditionCode.B;
       MeasureCondition certificateMeasureConditionWithMeasureConditionB =
-          DocumentaryMeasureCondition.builder()
-              .id("1000")
-              .conditionCode(bMeasureConditionCode)
-              .documentCode(documentCode1)
-              .requirement("certificate requirement")
-              .build();
+        MeasureCondition.builder()
+          .id("1000")
+          .conditionCode(bMeasureConditionCode)
+          .documentCode(documentCode1)
+          .requirement("certificate requirement")
+          .build();
       MeasureCondition cdsWaiverOnConditionB =
-          DocumentaryMeasureCondition.builder()
-              .id("1002")
-              .conditionCode(bMeasureConditionCode)
-              .documentCode("999L")
-              .build();
+        MeasureCondition.builder()
+          .id("1002")
+          .conditionCode(bMeasureConditionCode)
+          .documentCode("999L")
+          .build();
       MeasureConditionCode cMeasureConditionCode = MeasureConditionCode.C;
       MeasureCondition certificateMeasureConditionWithMeasureConditionC =
-          DocumentaryMeasureCondition.builder()
-              .id("1000")
-              .conditionCode(cMeasureConditionCode)
-              .documentCode(documentCode2)
-              .requirement("certificate requirement")
-              .build();
+        MeasureCondition.builder()
+          .id("1000")
+          .conditionCode(cMeasureConditionCode)
+          .documentCode(documentCode2)
+          .requirement("certificate requirement")
+          .build();
       MeasureCondition cdsWaiverOnConditionC =
-          DocumentaryMeasureCondition.builder()
-              .id("1002")
-              .conditionCode(cMeasureConditionCode)
-              .documentCode(CDS_WAIVER)
-              .build();
+        MeasureCondition.builder()
+          .id("1002")
+          .conditionCode(cMeasureConditionCode)
+          .documentCode(CDS_WAIVER)
+          .build();
+
+      UkCountry destinationUkCountry = UkCountry.GB;
 
       MeasureOptions measureOptionForB =
-          MeasureOptions.builder()
-              .options(
-                  List.of(
-                      DocumentCodeMeasureOption.builder()
-                          .totalNumberOfCertificates(1)
-                          .documentCodeDescription(
-                              DocumentCodeDescription.builder().documentCode(documentCode1).build())
-                          .build(),
-                      ExceptionMeasureOption.builder()
-                          .documentCodeDescription(
-                              DocumentCodeDescription.builder().documentCode(CDS_WAIVER).build())
-                          .build()))
-              .build();
+        MeasureOptions.builder()
+          .options(
+            List.of(
+              DocumentCodeMeasureOption.builder()
+                .totalNumberOfCertificates(1)
+                .documentCodeDescription(
+                  DocumentCodeDescription.builder().documentCode(documentCode1).build())
+                .build(),
+              ExceptionMeasureOption.builder()
+                .documentCodeDescription(
+                  DocumentCodeDescription.builder().documentCode(CDS_WAIVER).build())
+                .build()))
+          .build();
       MeasureOptions measureOptionForC =
-          MeasureOptions.builder()
-              .options(
-                  List.of(
-                      DocumentCodeMeasureOption.builder()
-                          .totalNumberOfCertificates(1)
-                          .documentCodeDescription(
-                              DocumentCodeDescription.builder().documentCode(documentCode2).build())
-                          .build(),
-                      ExceptionMeasureOption.builder()
-                          .documentCodeDescription(
-                              DocumentCodeDescription.builder().documentCode(CDS_WAIVER).build())
-                          .build()))
-              .build();
+        MeasureOptions.builder()
+          .options(
+            List.of(
+              DocumentCodeMeasureOption.builder()
+                .totalNumberOfCertificates(1)
+                .documentCodeDescription(
+                  DocumentCodeDescription.builder().documentCode(documentCode2).build())
+                .build(),
+              ExceptionMeasureOption.builder()
+                .documentCodeDescription(
+                  DocumentCodeDescription.builder().documentCode(CDS_WAIVER).build())
+                .build()))
+          .build();
       Mockito.when(
-              multipleMeasureOptionsHandler.getMeasureOptions(
-                  List.of(
-                      certificateMeasureConditionWithMeasureConditionB,
-                      cdsWaiverOnConditionB,
-                      certificateMeasureConditionWithMeasureConditionC,
-                      cdsWaiverOnConditionC),
-                  IMPORT,
-                  locale))
-          .thenReturn(Flux.just(measureOptionForB, measureOptionForC));
+          multipleMeasureOptionsHandler.getMeasureOptions(
+            List.of(
+              certificateMeasureConditionWithMeasureConditionB,
+              cdsWaiverOnConditionB,
+              certificateMeasureConditionWithMeasureConditionC,
+              cdsWaiverOnConditionC),
+            destinationUkCountry))
+        .thenReturn(Flux.just(measureOptionForB, measureOptionForC));
 
       StepVerifier.create(
-              measureOptionService.getMeasureOptions(
-                  List.of(
-                      certificateMeasureConditionWithMeasureConditionB,
-                      cdsWaiverOnConditionB,
-                      certificateMeasureConditionWithMeasureConditionC,
-                      cdsWaiverOnConditionC,
-                      NEGATIVE_CONDITION),
-                  IMPORT,
-                  locale))
-          .expectNext(measureOptionForB, measureOptionForC)
-          .verifyComplete();
+          measureOptionService.getMeasureOptions(
+            List.of(
+              certificateMeasureConditionWithMeasureConditionB,
+              cdsWaiverOnConditionB,
+              certificateMeasureConditionWithMeasureConditionC,
+              cdsWaiverOnConditionC),
+            destinationUkCountry))
+        .expectNext(measureOptionForB, measureOptionForC)
+        .verifyComplete();
     }
 
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    void shouldTreatAsComplexMeasureWhenAnotherConditionCodeAlongWith999LAreShared(Locale locale) {
+    @Test
+    void shouldTreatAsComplexMeasureWhenAnotherConditionCodeAlongWith999LAreShared() {
       String commonDocumentCode = "C111";
       String documentCode1 = "C123";
       String documentCode2 = "C223";
 
       MeasureConditionCode bMeasureConditionCode = MeasureConditionCode.B;
       MeasureCondition certificateWithMeasureConditionB =
-          DocumentaryMeasureCondition.builder()
-              .id("1000")
-              .conditionCode(bMeasureConditionCode)
-              .documentCode(documentCode1)
-              .requirement("certificate requirement")
-              .build();
+        MeasureCondition.builder()
+          .id("1000")
+          .conditionCode(bMeasureConditionCode)
+          .documentCode(documentCode1)
+          .requirement("certificate requirement")
+          .build();
       MeasureCondition commonCertificateWithMeasureConditionB =
-          DocumentaryMeasureCondition.builder()
-              .id("1000")
-              .conditionCode(bMeasureConditionCode)
-              .documentCode(commonDocumentCode)
-              .requirement("certificate requirement")
-              .build();
+        MeasureCondition.builder()
+          .id("1000")
+          .conditionCode(bMeasureConditionCode)
+          .documentCode(commonDocumentCode)
+          .requirement("certificate requirement")
+          .build();
       MeasureCondition cdsWaiverOnConditionB =
-          DocumentaryMeasureCondition.builder()
-              .id("1002")
-              .conditionCode(bMeasureConditionCode)
-              .documentCode("999L")
-              .build();
+        MeasureCondition.builder()
+          .id("1002")
+          .conditionCode(bMeasureConditionCode)
+          .documentCode("999L")
+          .build();
       MeasureConditionCode cMeasureConditionCode = MeasureConditionCode.C;
       MeasureCondition certificateWithMeasureConditionC =
-          DocumentaryMeasureCondition.builder()
-              .id("1000")
-              .conditionCode(cMeasureConditionCode)
-              .documentCode(documentCode2)
-              .requirement("certificate requirement")
-              .build();
+        MeasureCondition.builder()
+          .id("1000")
+          .conditionCode(cMeasureConditionCode)
+          .documentCode(documentCode2)
+          .requirement("certificate requirement")
+          .build();
       MeasureCondition commonCertificateWithMeasureConditionC =
-          DocumentaryMeasureCondition.builder()
-              .id("1000")
-              .conditionCode(cMeasureConditionCode)
-              .documentCode(commonDocumentCode)
-              .requirement("certificate requirement")
-              .build();
+        MeasureCondition.builder()
+          .id("1000")
+          .conditionCode(cMeasureConditionCode)
+          .documentCode(commonDocumentCode)
+          .requirement("certificate requirement")
+          .build();
       MeasureCondition cdsWaiverOnConditionC =
-          DocumentaryMeasureCondition.builder()
-              .id("1002")
-              .conditionCode(bMeasureConditionCode)
-              .documentCode("999L")
-              .build();
+        MeasureCondition.builder()
+          .id("1002")
+          .conditionCode(bMeasureConditionCode)
+          .documentCode("999L")
+          .build();
+
+      UkCountry destinationUkCountry = UkCountry.GB;
 
       MeasureOptions complexMeasureOption =
-          MeasureOptions.builder()
-              .options(
-                  List.of(
-                      DocumentCodeMeasureOption.builder()
-                          .documentCodeDescription(DocumentCodeDescription.builder().build())
-                          .build()))
-              .build();
+        MeasureOptions.builder()
+          .options(
+            List.of(
+              DocumentCodeMeasureOption.builder()
+                .documentCodeDescription(DocumentCodeDescription.builder().build())
+                .build()))
+          .build();
       Mockito.when(
-              complexMeasureOptionHandler.getMeasureOption(
-                  List.of(
-                      certificateWithMeasureConditionB,
-                      commonCertificateWithMeasureConditionB,
-                      cdsWaiverOnConditionB,
-                      certificateWithMeasureConditionC,
-                      commonCertificateWithMeasureConditionC,
-                      cdsWaiverOnConditionC),
-                  IMPORT,
-                  locale))
-          .thenReturn(Mono.just(complexMeasureOption));
+          complexMeasureOptionHandler.getMeasureOption(
+            List.of(
+              certificateWithMeasureConditionB,
+              commonCertificateWithMeasureConditionB,
+              cdsWaiverOnConditionB,
+              certificateWithMeasureConditionC,
+              commonCertificateWithMeasureConditionC,
+              cdsWaiverOnConditionC),
+            destinationUkCountry))
+        .thenReturn(Mono.just(complexMeasureOption));
 
       StepVerifier.create(
-              measureOptionService.getMeasureOptions(
-                  List.of(
-                      certificateWithMeasureConditionB,
-                      commonCertificateWithMeasureConditionB,
-                      cdsWaiverOnConditionB,
-                      certificateWithMeasureConditionC,
-                      commonCertificateWithMeasureConditionC,
-                      cdsWaiverOnConditionC,
-                      NEGATIVE_CONDITION),
-                  IMPORT,
-                  locale))
-          .expectNext(complexMeasureOption)
-          .verifyComplete();
+          measureOptionService.getMeasureOptions(
+            List.of(
+              certificateWithMeasureConditionB,
+              commonCertificateWithMeasureConditionB,
+              cdsWaiverOnConditionB,
+              certificateWithMeasureConditionC,
+              commonCertificateWithMeasureConditionC,
+              cdsWaiverOnConditionC),
+            destinationUkCountry))
+        .expectNext(complexMeasureOption)
+        .verifyComplete();
     }
+
   }
 }

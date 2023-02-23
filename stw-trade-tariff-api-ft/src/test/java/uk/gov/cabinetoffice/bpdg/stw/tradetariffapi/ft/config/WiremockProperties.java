@@ -19,4 +19,5 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ConfigurationProperties(prefix = "wiremock")
-public class WiremockProperties extends HttpProperties {}
+public class WiremockProperties extends HttpProperties{
+}

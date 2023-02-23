@@ -30,7 +30,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
@@ -42,7 +41,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.RestrictiveMeasure;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
@@ -105,27 +103,15 @@ public class MeasuresController {
           @RequestParam(required = false)
           String additionalCode,
       @Parameter(description = "Date of Trade", example = "2021-09-30")
-          @DateTimeFormat(pattern = "yyyy-MM-dd")
-          @RequestParam(required = false)
-          LocalDate tradeDate,
-      @Parameter(description = "Locale", example = "EN or CY") @RequestParam(required = false)
-          Locale locale) {
-    if (tradeType == TradeType.IMPORT
-        && Arrays.stream(UkCountry.values())
-            .noneMatch(ukCountry -> destinationCountry.equals(ukCountry.name()))) {
-      return Mono.error(
-          new ValidationException(
-              "destinationCountry",
-              format("Destination country %s is not a valid UK country", destinationCountry)));
+      @DateTimeFormat(pattern = "yyyy-MM-dd")
+      @RequestParam(required = false)
+          LocalDate tradeDate) {
+    if(tradeType == TradeType.IMPORT && Arrays.stream(UkCountry.values()).noneMatch(ukCountry -> destinationCountry.equals(ukCountry.name()))){
+      return Mono.error(new ValidationException("destinationCountry", format("Destination country %s is not a valid UK country", destinationCountry)));
     }
 
-    if (tradeType == TradeType.EXPORT
-        && Arrays.stream(UkCountry.values())
-            .noneMatch(ukCountry -> originCountry.equals(ukCountry.name()))) {
-      return Mono.error(
-          new ValidationException(
-              "originCountry",
-              format("Origin country %s is not a valid UK country", originCountry)));
+    if(tradeType == TradeType.EXPORT && Arrays.stream(UkCountry.values()).noneMatch(ukCountry -> originCountry.equals(ukCountry.name()))){
+      return Mono.error(new ValidationException("originCountry", format("Origin country %s is not a valid UK country", originCountry)));
     }
 
     MeasuresRequest request =
@@ -136,12 +122,11 @@ public class MeasuresController {
             .tradeType(tradeType)
             .additionalCode(additionalCode)
             .dateOfTrade(ofNullable(tradeDate).orElse(clock.currentLocalDate()))
-            .locale(Optional.ofNullable(locale).orElse(Locale.EN))
             .build();
     return this.measuresService.getMeasures(request).collectList().map(this::transformToResponse);
   }
 
-  private MeasuresResponse transformToResponse(List<RestrictiveMeasure> restrictiveMeasures) {
+  private MeasuresResponse transformToResponse( List<RestrictiveMeasure> restrictiveMeasures) {
     return MeasuresResponse.builder().measures(restrictiveMeasures).build();
   }
 }

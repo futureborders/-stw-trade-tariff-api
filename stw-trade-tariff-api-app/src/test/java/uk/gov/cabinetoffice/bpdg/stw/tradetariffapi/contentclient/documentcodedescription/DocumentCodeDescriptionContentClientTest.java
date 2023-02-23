@@ -17,9 +17,6 @@
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.contentclient.documentcodedescription;
 
 import static org.mockito.Mockito.when;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale.EN;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType.EXPORT;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType.IMPORT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Files;
@@ -27,6 +24,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import lombok.SneakyThrows;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -34,8 +32,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
@@ -46,25 +42,26 @@ import reactor.test.StepVerifier;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.config.ApplicationProperties;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.contentclient.ContentApiConfiguration;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.model.DocumentCodeDescription;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.repository.DocumentCodeDescriptionRepository;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
 
 @ExtendWith(MockitoExtension.class)
 class DocumentCodeDescriptionContentClientTest {
 
   ApplicationProperties applicationProperties;
   private MockWebServer mockWebServer;
-  private DocumentCodeDescriptionRepository documentCodeDescriptionRepository;
+  private DocumentCodeDescriptionContentClient documentCodeDescriptionContentClient;
   @Mock private ContentApiConfiguration contentApiConfiguration;
+  private static final String CONTENT_SOURCE = "API";
 
   @BeforeEach
   @SneakyThrows
   void beforeEach() {
     mockWebServer = new MockWebServer();
     mockWebServer.start();
-    applicationProperties = new ApplicationProperties(null, contentApiConfiguration);
-    documentCodeDescriptionRepository =
+    applicationProperties =
+        new ApplicationProperties(null, null, contentApiConfiguration, CONTENT_SOURCE);
+    documentCodeDescriptionContentClient =
         new DocumentCodeDescriptionContentClient(
             WebClient.builder().build(), applicationProperties);
   }
@@ -77,32 +74,36 @@ class DocumentCodeDescriptionContentClientTest {
 
   @SneakyThrows
   @Test
-  void shouldReturnImportSpecificDocumentCodeDescriptions() {
+  void shouldReturnDocumentCodeDescriptions() {
     var response =
         Files.readString(
             Path.of(
                 Objects.requireNonNull(
                         getClass()
                             .getClassLoader()
-                            .getResource(
-                                "stubs/content/documentcodedescription/9111_9100_IMPORT_EN.json"))
+                            .getResource("stubs/content/documentcodedescription/9111and9100.json"))
                     .toURI()));
 
     var expected =
         List.of(
             DocumentCodeDescription.builder()
                 .documentCode("9111")
-                .locale(EN)
+                .locale(Locale.EN)
                 .descriptionOverlay(
                     "[Read about precursor chemical licensing](https://www.gov.uk/guidance/precursor-chemical-licensing)")
+                .destinationCountryRestrictions(Set.of(UkCountry.GB, UkCountry.XI))
+                .published(true)
                 .build(),
             DocumentCodeDescription.builder()
                 .documentCode("9100")
-                .locale(EN)
+                .locale(Locale.EN)
                 .descriptionOverlay(
                     "You need an import licence if your **firearms and ammunition** are:\r\n"
                         + "- within either chapter 93 (arms and ammunition) or chapter 97 (works of art, collectors' pieces and antiques) of the UK tariff")
+                .destinationCountryRestrictions(Set.of(UkCountry.GB, UkCountry.XI))
+                .published(true)
                 .build());
+    System.out.println("naveen " + Locale.valueOf("EN"));
 
     mockWebServer.enqueue(
         new MockResponse()
@@ -115,64 +116,15 @@ class DocumentCodeDescriptionContentClientTest {
     when(contentApiConfiguration.getUrl()).thenReturn(baseUrl);
 
     Flux<DocumentCodeDescription> result =
-        documentCodeDescriptionRepository.findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-            Arrays.asList("9111", "9100"), IMPORT, EN);
+        documentCodeDescriptionContentClient.findByDocumentCodeInAndLocaleAndPublished(
+            Arrays.asList("9111", "9100"), Locale.EN, true);
 
     StepVerifier.create(result).expectNext(expected.get(0), expected.get(1)).verifyComplete();
   }
 
   @SneakyThrows
   @Test
-  void shouldReturnExportSpecificDocumentCodeDescriptions() {
-    var response =
-        Files.readString(
-            Path.of(
-                Objects.requireNonNull(
-                        getClass()
-                            .getClassLoader()
-                            .getResource(
-                                "stubs/content/documentcodedescription/9111_9100_EXPORT_EN.json"))
-                    .toURI()));
-
-    var expected =
-        List.of(
-            DocumentCodeDescription.builder()
-                .documentCode("9111")
-                .locale(EN)
-                .descriptionOverlay(
-                    "Export [Read about precursor chemical licensing](https://www.gov.uk/guidance/precursor-chemical-licensing)")
-                .build(),
-            DocumentCodeDescription.builder()
-                .documentCode("9100")
-                .locale(EN)
-                .descriptionOverlay(
-                    "Export You need an import licence if your **firearms and ammunition** are:\r\n"
-                        + "- within either chapter 93 (arms and ammunition) or chapter 97 (works of art, collectors' pieces and antiques) of the UK tariff")
-                .build());
-
-    mockWebServer.enqueue(
-        new MockResponse()
-            .setResponseCode(200)
-            .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .setBody(response));
-
-    var url = mockWebServer.url("/").toString();
-    var baseUrl = url.substring(0, url.lastIndexOf("/"));
-    when(contentApiConfiguration.getUrl()).thenReturn(baseUrl);
-
-    Flux<DocumentCodeDescription> result =
-        documentCodeDescriptionRepository.findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-            Arrays.asList("9111", "9100"), EXPORT, EN);
-
-    StepVerifier.create(result).expectNext(expected.get(0), expected.get(1)).verifyComplete();
-  }
-
-  @SneakyThrows
-  @ParameterizedTest
-  @MethodSource(
-      "uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.utils.StubDataUtils#tradeTypeAndLocales")
-  void shouldReturnEmptyDocumentCodeDescriptionsWhenNoMatchingFound(
-      TradeType tradeType, Locale locale) {
+  void shouldReturnEmptyDocumentCodeDescriptionsWhenNoMatchingFound() {
     List<DocumentCodeDescriptionDTO> resp = List.of();
     mockWebServer.enqueue(
         new MockResponse()
@@ -185,18 +137,15 @@ class DocumentCodeDescriptionContentClientTest {
     when(contentApiConfiguration.getUrl()).thenReturn(baseUrl);
 
     Flux<DocumentCodeDescription> result =
-        documentCodeDescriptionRepository.findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-            Arrays.asList("9111", "9100"), tradeType, locale);
+        documentCodeDescriptionContentClient.findByDocumentCodeInAndLocaleAndPublished(
+            Arrays.asList("9111", "9100"), Locale.EN, true);
 
     StepVerifier.create(result).verifyComplete();
   }
 
   @SneakyThrows
-  @ParameterizedTest
-  @MethodSource(
-      "uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.utils.StubDataUtils#tradeTypeAndLocales")
-  void shouldReturnEmptyDocumentCodeDescriptionsWhenInternalServerError(
-      TradeType tradeType, Locale locale) {
+  @Test
+  void shouldReturnEmptyDocumentCodeDescriptionsWhenInternalServerError() {
     mockWebServer.enqueue(
         new MockResponse()
             .setResponseCode(500)
@@ -207,8 +156,8 @@ class DocumentCodeDescriptionContentClientTest {
     when(contentApiConfiguration.getUrl()).thenReturn(baseUrl);
 
     Flux<DocumentCodeDescription> result =
-        documentCodeDescriptionRepository.findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-            Arrays.asList("9111", "9100"), tradeType, locale);
+        documentCodeDescriptionContentClient.findByDocumentCodeInAndLocaleAndPublished(
+            Arrays.asList("9111", "9100"), Locale.EN, true);
 
     StepVerifier.create(result).verifyComplete();
   }

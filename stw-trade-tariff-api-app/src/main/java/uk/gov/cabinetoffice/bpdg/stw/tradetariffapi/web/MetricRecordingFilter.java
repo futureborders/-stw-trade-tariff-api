@@ -37,8 +37,8 @@ public class MetricRecordingFilter implements WebFilter {
 
   @Autowired
   public MetricRecordingFilter(
-      InboundRequestMetrics inboundRequestMetrics,
-      ResourceNameLabelResolver resourceNameLabelResolver) {
+    InboundRequestMetrics inboundRequestMetrics,
+    ResourceNameLabelResolver resourceNameLabelResolver) {
     this.inboundRequestMetrics = inboundRequestMetrics;
     this.resourceNameLabelResolver = resourceNameLabelResolver;
   }
@@ -49,27 +49,27 @@ public class MetricRecordingFilter implements WebFilter {
     final Optional<String> resourceName = getResourceName(request);
     var timer = Timer.startNew();
     serverWebExchange
-        .getResponse()
-        .beforeCommit(
-            () -> {
-              resourceName.ifPresent(
-                  r -> {
-                    log.debug(
-                        "Request parts {}-{}, mapped to API name {}",
-                        request.getMethod(),
-                        request.getPath(),
-                        resourceName.orElse("unknown"));
-                    final Optional<Integer> responseStatusCode =
-                        Optional.ofNullable(serverWebExchange.getResponse().getRawStatusCode());
-                    responseStatusCode.ifPresent(
-                        status -> {
-                          inboundRequestMetrics.incrementResponseCount(resourceName.get(), status);
-                          log.debug("Response was {}", status);
-                        });
-                    inboundRequestMetrics.recordResponseLatency(resourceName.get(), timer.end());
-                  });
-              return Mono.empty();
+      .getResponse()
+      .beforeCommit(
+        () -> {
+          resourceName.ifPresent(
+            r -> {
+              log.debug(
+                "Request parts {}-{}, mapped to API name {}",
+                request.getMethod(),
+                request.getPath(),
+                resourceName.orElse("unknown"));
+              final Optional<Integer> responseStatusCode =
+                Optional.ofNullable(serverWebExchange.getResponse().getRawStatusCode());
+              responseStatusCode.ifPresent(
+                status -> {
+                  inboundRequestMetrics.incrementResponseCount(resourceName.get(), status);
+                  log.debug("Response was {}", status);
+                });
+              inboundRequestMetrics.recordResponseLatency(resourceName.get(), timer.end());
             });
+          return Mono.empty();
+        });
     return webFilterChain.filter(serverWebExchange);
   }
 

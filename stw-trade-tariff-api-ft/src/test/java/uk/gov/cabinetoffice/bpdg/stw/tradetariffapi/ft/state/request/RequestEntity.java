@@ -37,4 +37,5 @@ public abstract class RequestEntity {
   }
 
   public abstract String path();
+
 }

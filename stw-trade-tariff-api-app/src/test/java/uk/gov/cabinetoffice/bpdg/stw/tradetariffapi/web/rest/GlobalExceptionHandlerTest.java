@@ -30,7 +30,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.LoggerFactory;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.exception.ResourceNotFoundException;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.web.rest.model.error.ErrorResponse;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.web.rest.model.error.ValidationErrorResponse;
 
 @ExtendWith(MockitoExtension.class)
 class GlobalExceptionHandlerTest {
@@ -47,57 +46,14 @@ class GlobalExceptionHandlerTest {
 
     // when
     ErrorResponse result =
-      globalExceptionHandler.handleResourceNotFoundException(
-        new ResourceNotFoundException("Commodity", "8079909999"));
+        globalExceptionHandler.handleResourceNotFoundException(
+            new ResourceNotFoundException("Commodity", "8079909999"));
 
     // then
     List<ILoggingEvent> logsList = listAppender.list;
     assertThat(logsList.get(0).getMessage()).isEqualTo("Handling ResourceNotFoundException");
     assertThat(logsList.get(0).getLevel()).isEqualTo(Level.INFO);
     assertThat(result.getMessage())
-      .isEqualTo("Resource 'Commodity' not found with id '8079909999'");
-  }
-
-  @Test
-  void shouldLogExceptionErrorLevel() {
-    // given
-    Logger logger = (Logger) LoggerFactory.getLogger(GlobalExceptionHandler.class);
-    ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
-    listAppender.start();
-    logger.addAppender(listAppender);
-
-    // when
-    ErrorResponse result =
-      globalExceptionHandler.handleAllExceptions(
-        new Exception("Internal Server Error"));
-
-    // then
-    List<ILoggingEvent> logsList = listAppender.list;
-    assertThat(logsList.get(0).getMessage()).isEqualTo("Handling Exception");
-    assertThat(logsList.get(0).getLevel()).isEqualTo(Level.ERROR);
-    assertThat(result.getMessage())
-      .isEqualTo("Unexpected error");
-  }
-
-  @Test
-  void shouldHandleValidationExceptionErrorLevel() {
-    // given
-    Logger logger = (Logger) LoggerFactory.getLogger(GlobalExceptionHandler.class);
-    ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
-    listAppender.start();
-    logger.addAppender(listAppender);
-
-    // when
-    ValidationErrorResponse result =
-      globalExceptionHandler.handleValidationException(
-        new ValidationException("TradeType", "Not a valid value"));
-
-    // then
-    List<ILoggingEvent> logsList = listAppender.list;
-    assertThat(logsList.get(0).getMessage()).isEqualTo("Handling ValidationException");
-    assertThat(logsList.get(0).getLevel()).isEqualTo(Level.ERROR);
-    assertThat(result.getValidationErrors()).hasSize(1);
-    assertThat(result.getValidationErrors().get(0).getMessage()).isEqualTo("Not a valid value");
-    assertThat(result.getValidationErrors().get(0).getFieldName()).isEqualTo("TradeType");
+        .isEqualTo("Resource 'Commodity' not found with id '8079909999'");
   }
 }

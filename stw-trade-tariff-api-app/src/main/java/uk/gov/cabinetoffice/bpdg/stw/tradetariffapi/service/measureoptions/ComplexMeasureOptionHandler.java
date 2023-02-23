@@ -19,64 +19,57 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.repository.DocumentCodeDescriptionRepository;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.DocumentaryMeasureCondition;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.config.AppConfig;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.repository.DocumentCodeDescriptionContentRepo;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ExceptionAndThresholdMeasureOption;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureCondition;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureConditionType;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureOption;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureOptions;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MultiCertificateMeasureOption;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.NegativeMeasureCondition;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ThresholdMeasureCondition;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ThresholdMeasureOption;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
 
 @Component
 @Slf4j
 public class ComplexMeasureOptionHandler extends SingleMeasureOptionHandler {
 
   public ComplexMeasureOptionHandler(
-      DocumentCodeDescriptionRepository documentCodeDescriptionRepository) {
-    super(documentCodeDescriptionRepository);
+      DocumentCodeDescriptionContentRepo documentCodeDescriptionContentRepo) {
+    super(documentCodeDescriptionContentRepo);
   }
 
   @Override
   public Mono<MeasureOptions> getMeasureOption(
-      List<MeasureCondition> measureConditions, TradeType tradeType, Locale locale) {
+      List<MeasureCondition> measureConditions, UkCountry destinationUkCountry) {
 
     if (CollectionUtils.isEmpty(measureConditions)) {
       return Mono.empty();
     }
 
-    List<MeasureCondition> nonNegativeMeasureConditions =
-        measureConditions.stream()
-            .filter(measureCondition -> !(measureCondition instanceof NegativeMeasureCondition))
-            .collect(Collectors.toList());
-
-    List<DocumentaryMeasureCondition> disjointCertificates = new ArrayList<>();
+    List<MeasureCondition> disjointCertificates = new ArrayList<>();
     MeasureCondition disjointThreshold = null;
     List<MeasureCondition> commonMeasureConditions = new ArrayList<>();
     Set<String> measureConditionKeys = new HashSet<>();
-    for (int measureIndex = 0; measureIndex < nonNegativeMeasureConditions.size(); measureIndex++) {
-      var measureCondition = nonNegativeMeasureConditions.get(measureIndex);
-      if (measureConditionKeys.contains(measureCondition.getMeasureConditionKey())) {
+    for (int measureIndex = 0; measureIndex < measureConditions.size(); measureIndex++) {
+      var measureCondition = measureConditions.get(measureIndex);
+      if (measureCondition.getMeasureConditionType() == MeasureConditionType.NEGATIVE
+          || measureConditionKeys.contains(measureCondition.getMeasureConditionKey())) {
         continue;
       }
       measureConditionKeys.add(measureCondition.getMeasureConditionKey());
       if (isMeasureConditionPresentInExistingMeasureConditions(
-          measureCondition, nonNegativeMeasureConditions, measureIndex)) {
+          measureCondition, measureConditions, measureIndex)) {
         commonMeasureConditions.add(measureCondition);
       } else {
-        if (measureCondition instanceof DocumentaryMeasureCondition) {
-          disjointCertificates.add((DocumentaryMeasureCondition) measureCondition);
+        if (StringUtils.hasLength(measureCondition.getDocumentCode())) {
+          disjointCertificates.add(measureCondition);
         } else {
           disjointThreshold = measureCondition;
         }
@@ -85,7 +78,7 @@ public class ComplexMeasureOptionHandler extends SingleMeasureOptionHandler {
 
     List<Mono<MeasureOption>> measureOptionsList =
         convertToMeasureOptions(
-            commonMeasureConditions, disjointCertificates, disjointThreshold, tradeType, locale);
+            commonMeasureConditions, disjointCertificates, disjointThreshold, destinationUkCountry);
 
     return Flux.fromIterable(measureOptionsList)
         .flatMapSequential(Function.identity())
@@ -112,16 +105,14 @@ public class ComplexMeasureOptionHandler extends SingleMeasureOptionHandler {
 
   private List<Mono<MeasureOption>> convertToMeasureOptions(
       List<MeasureCondition> commonMeasureConditions,
-      List<DocumentaryMeasureCondition> disjointCertificates,
+      List<MeasureCondition> disjointCertificates,
       MeasureCondition disjointThreshold,
-      TradeType tradeType,
-      Locale locale) {
+      UkCountry destinationUkCountry) {
     List<Mono<MeasureOption>> measureOptionList = new ArrayList<>();
 
     List<MeasureCondition> commonMeasureConditionsSortedList =
         new ArrayList<>(commonMeasureConditions);
-    commonMeasureConditionsSortedList.sort(
-        DOCUMENT_TYPE_COMPARATOR.thenComparing(DOCUMENT_CODE_COMPARATOR));
+    commonMeasureConditionsSortedList.sort(DOCUMENT_TYPE_COMPARATOR.thenComparing(DOCUMENT_CODE_COMPARATOR));
     long totalNumberOfCertificates =
         commonMeasureConditionsSortedList.stream()
             .filter(mc -> MeasureConditionType.CERTIFICATE.equals(mc.getMeasureConditionType()))
@@ -130,13 +121,14 @@ public class ComplexMeasureOptionHandler extends SingleMeasureOptionHandler {
     for (MeasureCondition measureCondition : commonMeasureConditionsSortedList) {
       measureOptionList.add(
           this.convertToMeasureOption(
-              measureCondition, totalNumberOfCertificates, tradeType, locale));
+              measureCondition, totalNumberOfCertificates, destinationUkCountry));
     }
     if (!CollectionUtils.isEmpty(disjointCertificates)) {
       if (disjointCertificates.size() > 1) {
         disjointCertificates.sort(DOCUMENT_CODE_COMPARATOR);
         Mono<MeasureOption> multiCertificateMeasureOption =
-            getDocumentCodeDescriptions(disjointCertificates, tradeType, locale)
+            getDocumentCodeDescriptions(
+                    disjointCertificates, destinationUkCountry, AppConfig.LOCALE)
                 .map(
                     documentCodeDescriptions ->
                         MultiCertificateMeasureOption.builder()
@@ -147,33 +139,30 @@ public class ComplexMeasureOptionHandler extends SingleMeasureOptionHandler {
       } else {
         measureOptionList.add(
             maybeBuildThresholdCertificateMeasureOption(
-                disjointCertificates.get(0), disjointThreshold, tradeType, locale));
+                disjointCertificates.get(0), disjointThreshold, destinationUkCountry));
       }
     }
     return measureOptionList;
   }
 
   private Mono<MeasureOption> maybeBuildThresholdCertificateMeasureOption(
-      DocumentaryMeasureCondition measureConditionForDisjointCertificate,
+      MeasureCondition measureConditionForDisjointCertificate,
       MeasureCondition measureConditionForDisjointThreshold,
-      TradeType tradeType,
-      Locale locale) {
+      UkCountry destinationUkCountry) {
     if (measureConditionForDisjointCertificate != null
         && measureConditionForDisjointThreshold != null) {
       try {
-        ThresholdMeasureOption thresholdMeasureOption =
-            ThresholdMeasureOption.builder()
-                .threshold((ThresholdMeasureCondition) measureConditionForDisjointThreshold)
-                .locale(locale)
-                .build();
-        return getDocumentCodeDescription(measureConditionForDisjointCertificate, tradeType, locale)
+        ThresholdMeasureOption thresholdMeasureOption = ThresholdMeasureOption.builder().threshold(measureConditionForDisjointThreshold).build();
+        var locale = AppConfig.LOCALE;
+        return getDocumentCodeDescription(
+            measureConditionForDisjointCertificate, destinationUkCountry, locale)
             .map(
                 documentCodeDescription ->
                     ExceptionAndThresholdMeasureOption.exceptionAndThresholdBuilder()
                         .exception(documentCodeDescription)
                         .thresholdMeasure(thresholdMeasureOption)
                         .build());
-      } catch (IllegalArgumentException illegalArgumentException) {
+      } catch (IllegalArgumentException illegalArgumentException){
         log.warn("Threshold measure condition could not be built", illegalArgumentException);
       }
     }

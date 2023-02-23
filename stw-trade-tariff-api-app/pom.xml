@@ -17,10 +17,10 @@
     <logstash-logback-encoder.version>6.4</logstash-logback-encoder.version>
     <springdoc-openapi-webflux-ui.version>1.6.6</springdoc-openapi-webflux-ui.version>
     <git-commit-id-plugin.version>4.0.0</git-commit-id-plugin.version>
-    <stw-prometheus.version>1.0.0</stw-prometheus.version>
+    <stw-prometheus.version>0.0.22</stw-prometheus.version>
     <caffeine.version>3.0.6</caffeine.version>
     <reactor-resilience4j.version>2.1.1</reactor-resilience4j.version>
-    <hmrc-trade-tariff-api-client.version>1.0.0</hmrc-trade-tariff-api-client.version>
+    <hmrc-trade-tariff-api-client.version>0.0.18</hmrc-trade-tariff-api-client.version>
     <guava-testlib.version>30.1.1-jre</guava-testlib.version>
     <okhttp.version>4.9.3</okhttp.version>
   </properties>
@@ -43,15 +43,33 @@
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-r2dbc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.r2dbc</groupId>
+      <artifactId>r2dbc-postgresql</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-cache</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+      <version>${caffeine.version}</version>
+    </dependency>
+    <dependency>
       <groupId>io.projectreactor.addons</groupId>
       <artifactId>reactor-extra</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.springdoc</groupId>
@@ -150,9 +168,6 @@
       <plugin>
         <groupId>pl.project13.maven</groupId>
         <artifactId>git-commit-id-plugin</artifactId>
-        <configuration>
-           <failOnNoGitDirectory>false</failOnNoGitDirectory>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
@@ -181,6 +196,15 @@
               <excludes>
                 <exclude>uk/gov/cabinetoffice/bpdg/stw/tradetariffapi/Startup.class</exclude>
                 <exclude>uk/gov/cabinetoffice/bpdg/stw/tradetariffapi/config/**/*.class</exclude>
+                <exclude>
+                  uk/gov/cabinetoffice/bpdg/stw/tradetariffapi/domain/tradetariff/**/*.class
+                </exclude>
+                <exclude>uk/gov/cabinetoffice/bpdg/stw/tradetariffapi/web/rest/model/**/*.class
+                </exclude>
+                <exclude>uk/gov/cabinetoffice/bpdg/stw/tradetariffapi/dao/**/*.class</exclude>
+                <exclude>uk/gov/cabinetoffice/bpdg/stw/tradetariffapi/domain/Prohibition.class
+                </exclude>
+                <exclude>uk/gov/cabinetoffice/bpdg/stw/tradetariffapi/pojo/*.class</exclude>
               </excludes>
               <rules>
                 <rule>

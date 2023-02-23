@@ -17,6 +17,7 @@
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.contentclient.documentcodedescription;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,32 +28,30 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.config.ApplicationProperties;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.model.DocumentCodeDescription;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.repository.DocumentCodeDescriptionRepository;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.repository.DocumentCodeDescriptionContentRepo;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
 
 @Component
 @AllArgsConstructor
 @Slf4j
-public class DocumentCodeDescriptionContentClient implements DocumentCodeDescriptionRepository {
+public class DocumentCodeDescriptionContentClient implements DocumentCodeDescriptionContentRepo {
 
   private static final String DOCUMENT_CODE_DESCRIPTION_API_ENDPOINT =
       "/api/v1/document-code-descriptions";
   private static final String DOCUMENT_CODES = "documentCodes";
   private static final String LOCALE = "locale";
-  private static final String TRADE_TYPE = "tradeType";
   private final WebClient webClient;
   private final ApplicationProperties applicationProperties;
 
-  public Flux<DocumentCodeDescription> findDocumentCodeDescriptionsByDocumentCodesAndTradeTypeAndLocale(
-      List<String> documentCodes, TradeType tradeType, Locale locale) {
+  public Flux<DocumentCodeDescription> findByDocumentCodeInAndLocaleAndPublished(
+      List<String> documentCodes, Locale locale, boolean published) {
     var contentApiConfiguration = applicationProperties.getContentApi();
     log.debug(
-        "Calling the content api with baseUrl: {}, api path: {}, documentCodes: {}, tradeType: {} and locale: {}",
+        "Calling the content api with baseUrl: {}, api path: {}, documentCodes: {} and locale: {}",
         contentApiConfiguration.getUrl(),
         DOCUMENT_CODE_DESCRIPTION_API_ENDPOINT,
         documentCodes,
-        tradeType,
         locale);
     final Mono<DocumentCodeDescriptionResponseDTO> resultMono =
         webClient
@@ -66,7 +65,6 @@ public class DocumentCodeDescriptionContentClient implements DocumentCodeDescrip
                         .path(DOCUMENT_CODE_DESCRIPTION_API_ENDPOINT)
                         .queryParam(DOCUMENT_CODES, String.join(",", documentCodes))
                         .queryParam(LOCALE, locale.name())
-                        .queryParam(TRADE_TYPE, tradeType.name())
                         .build())
             .accept(MediaType.APPLICATION_JSON)
             .retrieve()
@@ -74,9 +72,8 @@ public class DocumentCodeDescriptionContentClient implements DocumentCodeDescrip
             .onErrorResume(
                 ex -> {
                   log.error(
-                      "Error occurred while fetching document codes: {} by tradeType: {} and locale : {}",
+                      "Error occurred while fetching document codes: {} by locale : {}",
                       documentCodes,
-                      tradeType,
                       locale,
                       ex);
                   return Mono.empty();
@@ -93,6 +90,9 @@ public class DocumentCodeDescriptionContentClient implements DocumentCodeDescrip
                                 .locale(Locale.valueOf(documentCodeDescriptionDTO.getLocale()))
                                 .descriptionOverlay(
                                     documentCodeDescriptionDTO.getDescriptionOverlay())
+                                .published(true)
+                                .destinationCountryRestrictions(
+                                    Set.of(UkCountry.GB, UkCountry.XI))
                                 .build())
                     .collect(Collectors.toList())));
   }

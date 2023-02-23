@@ -1,6 +1,6 @@
 {
   "request": {
-    "url": "/api/v1/measure-type-descriptions?measureTypes=465&locale=EN&tradeType=IMPORT",
+    "url": "/api/v1/measure-type-descriptions?measureTypes=465&locale=EN",
     "method": "GET"
   },
   "response": {

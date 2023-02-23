@@ -29,7 +29,6 @@ import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
@@ -43,16 +42,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.AdditionalCode;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Duty;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Quota;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Tax;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Tariff;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TariffAndTaxes;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Tax;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Duty;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.service.TariffAndTaxesService;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.web.rest.model.TariffAndTaxesRequest;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.web.rest.model.response.CommodityMeasuresResponse;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.web.rest.model.response.TariffAndTaxesResponse;
 
 @RestController
@@ -64,21 +63,15 @@ public class TariffAndTaxesController {
       (o1, o2) ->
           Comparator.comparing(Tariff::getMeasureTypeId)
               .thenComparing(tariff -> tariff.getGeographicalArea().getId())
-              .thenComparing(
-                  tariff -> tariff.getAdditionalCode().map(AdditionalCode::getCode).orElse(null),
-                  Comparator.nullsLast(Comparator.naturalOrder()))
-              .thenComparing(
-                  tariff -> tariff.getQuota().map(Quota::getNumber).orElse(null),
-                  Comparator.nullsLast(Comparator.naturalOrder()))
+              .thenComparing(tariff -> tariff.getAdditionalCode().map(AdditionalCode::getCode).orElse(null), Comparator.nullsLast(Comparator.naturalOrder()))
+              .thenComparing(tariff -> tariff.getQuota().map(Quota::getNumber).orElse(null), Comparator.nullsLast(Comparator.naturalOrder()))
               .compare(o1, o2);
 
   private static final Comparator<Tax> TAXES_COMPARATOR =
       (o1, o2) ->
           Comparator.comparing(Tax::getMeasureTypeId)
               .thenComparing(tax -> tax.getGeographicalArea().getId())
-              .thenComparing(
-                  tax -> tax.getAdditionalCode().map(AdditionalCode::getCode).orElse(null),
-                  Comparator.nullsLast(Comparator.naturalOrder()))
+              .thenComparing(tax -> tax.getAdditionalCode().map(AdditionalCode::getCode).orElse(null), Comparator.nullsLast(Comparator.naturalOrder()))
               .compare(o1, o2);
 
   private final TariffAndTaxesService tariffAndTaxesService;
@@ -97,7 +90,7 @@ public class TariffAndTaxesController {
             content =
                 @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = TariffAndTaxesResponse.class)))
+                    schema = @Schema(implementation = CommodityMeasuresResponse.class)))
       })
   @Operation(
       summary = "Gets Duties for a given commodity.",
@@ -127,8 +120,6 @@ public class TariffAndTaxesController {
           @NotNull
           @RequestParam(required = false)
           UkCountry destinationCountry,
-      @Parameter(description = "Locale", example = "EN or CY") @RequestParam(required = false)
-          Locale locale,
       @Parameter(description = "Import date", example = "2021-09-30")
           @DateTimeFormat(pattern = "yyyy-MM-dd")
           @RequestParam(required = false, defaultValue = "#{T(java.time.LocalDate).now()}")
@@ -140,7 +131,6 @@ public class TariffAndTaxesController {
             .destinationCountry(destinationCountry)
             .tradeType(tradeType)
             .importDate(importDate)
-            .locale(Optional.ofNullable(locale).orElse(Locale.EN))
             .build();
     return tariffAndTaxesService.getTariffAndTaxes(request).map(this::convertToResponse);
   }
@@ -148,7 +138,7 @@ public class TariffAndTaxesController {
   private TariffAndTaxesResponse convertToResponse(TariffAndTaxes tariffAndTaxes) {
     Map<Boolean, List<Duty>> collect =
         tariffAndTaxes.getDuties().stream()
-            .collect(Collectors.partitioningBy(Tariff.class::isInstance));
+            .collect(Collectors.partitioningBy(item -> item instanceof Tariff));
     return TariffAndTaxesResponse.builder()
         .taxes(
             collect.get(Boolean.FALSE).stream()

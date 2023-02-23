@@ -51,23 +51,14 @@ public class MeasuresService {
             measuresRequest.getTradeType() == TradeType.IMPORT
                 ? UkCountry.valueOf(measuresRequest.getDestinationCountry())
                 : UkCountry.valueOf(measuresRequest.getOriginCountry()))
-        .flatMapMany(
-            response ->
-                toMeasuresResponse(
-                    response,
-                    measuresRequest,
-                    measuresRequest.getCommodityCode(),
-                    measuresRequest.getLocale()));
+        .flatMapMany(response -> toMeasuresResponse(response, measuresRequest));
   }
 
   private Flux<RestrictiveMeasure> toMeasuresResponse(
-      TradeTariffCommodityResponse tradeTariffCommodityResponse,
-      MeasuresRequest measuresRequest,
-      String commodityCode,
-      Locale locale) {
+      TradeTariffCommodityResponse tradeTariffCommodityResponse, MeasuresRequest measuresRequest) {
     List<Measure> restrictiveMeasures =
         measureFilterer.getRestrictiveMeasures(
-            measureBuilder.from(tradeTariffCommodityResponse, commodityCode),
+            measureBuilder.from(tradeTariffCommodityResponse),
             measuresRequest.getTradeType(),
             measuresRequest.getTradeType() == TradeType.IMPORT
                 ? measuresRequest.getOriginCountry()
@@ -82,15 +73,16 @@ public class MeasuresService {
             measuresRequest.getTradeType() == TradeType.IMPORT
                 ? measuresRequest.getOriginCountry()
                 : measuresRequest.getDestinationCountry(),
-            locale,
+            Locale.EN,
             measuresRequest.getTradeType());
 
     return this.measureTypeService
-        .getRestrictiveMeasures(
+        .getSignpostingMeasureTypeContents(
             restrictiveMeasuresWithAdditionalCodeFiltering,
             measuresRequest.getCommodityCode(),
-            measuresRequest.getTradeType(),
-            measuresRequest.getLocale())
+            measuresRequest.getTradeType() == TradeType.IMPORT
+                ? UkCountry.valueOf(measuresRequest.getDestinationCountry())
+                : UkCountry.valueOf(measuresRequest.getOriginCountry()))
         .concatWith(prohibitionListMono.flatMapMany(Flux::fromIterable));
   }
 }

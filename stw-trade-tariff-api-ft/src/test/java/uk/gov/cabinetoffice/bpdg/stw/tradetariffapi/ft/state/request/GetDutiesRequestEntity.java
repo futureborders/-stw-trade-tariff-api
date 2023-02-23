@@ -32,7 +32,6 @@ public class GetDutiesRequestEntity extends RequestEntity {
   String originCountry;
   String destinationCountry;
   String importDate;
-  String locale;
 
   @Override
   public Map<String, String> getHeaders() {
@@ -41,7 +40,12 @@ public class GetDutiesRequestEntity extends RequestEntity {
 
   @Override
   public String path() {
-    return buildUri(commodityCode, tradeType, originCountry, destinationCountry, importDate, locale);
+    return buildUri(
+        commodityCode,
+        tradeType,
+        originCountry,
+        destinationCountry,
+        importDate);
   }
 
   private String buildUri(
@@ -49,8 +53,7 @@ public class GetDutiesRequestEntity extends RequestEntity {
       String tradeType,
       String originCountry,
       String destinationCountry,
-      String importDate,
-      String locale) {
+      String importDate) {
     StringBuilder stringBuilder = new StringBuilder(CONTEXT_ROOT + "/commodities");
     if (StringUtils.isNotBlank(commodityCode)) {
       stringBuilder.append("/").append(commodityCode);
@@ -73,9 +76,6 @@ public class GetDutiesRequestEntity extends RequestEntity {
       }
       if (StringUtils.isNotBlank(importDate)) {
         stringBuilder.append("&importDate=").append(importDate);
-      }
-      if (StringUtils.isNotBlank(locale)) {
-        stringBuilder.append("&locale=").append(locale);
       }
     }
     return stringBuilder.toString();

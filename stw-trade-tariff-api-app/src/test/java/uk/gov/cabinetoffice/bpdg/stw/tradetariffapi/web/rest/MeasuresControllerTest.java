@@ -28,8 +28,6 @@ import java.util.Objects;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration;
@@ -41,10 +39,9 @@ import reactor.core.publisher.Flux;
 import uk.gov.cabinetoffice.bpdg.stw.monitoring.prometheus.metrics.application.InboundRequestMetrics;
 import uk.gov.cabinetoffice.bpdg.stw.monitoring.prometheus.metrics.application.ResourceNameLabelResolver;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.model.DocumentCodeDescription;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ConditionBasedRestrictiveMeasure;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.DocumentCodeMeasureOption;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureOptions;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ConditionBasedRestrictiveMeasure;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.service.MeasuresService;
@@ -57,21 +54,23 @@ import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.web.rest.model.MeasuresReque
     excludeAutoConfiguration = ReactiveSecurityAutoConfiguration.class)
 class MeasuresControllerTest {
 
-  LocalDate currentLocalDate = LocalDate.now();
   @MockBean private MeasuresService measuresService;
   @MockBean private Clock clock;
+
   @MockBean private InboundRequestMetrics inboundRequestMetrics;
   @MockBean private ResourceNameLabelResolver resourceNameLabelResolver;
+
   @Autowired private WebTestClient webTestClient;
 
+  LocalDate currentLocalDate = LocalDate.now();
+
   @BeforeEach
-  public void setUp() {
+  public void setUp(){
     when(clock.currentLocalDate()).thenReturn(currentLocalDate);
   }
 
-  @ParameterizedTest
-  @EnumSource(Locale.class)
-  void shouldReturnListOfMeasuresForACommodityWithoutAdditionalCode(Locale locale) {
+  @Test
+  public void shouldReturnListOfMeasuresForACommodityWithoutAdditionalCode() {
     String commodityCode = "1234567890";
     UkCountry destinationCountry = UkCountry.GB;
     LocalDate importDate = LocalDate.now();
@@ -85,7 +84,6 @@ class MeasuresControllerTest {
             .originCountry(originCountry)
             .destinationCountry(destinationCountry.name())
             .commodityCode(commodityCode)
-            .locale(locale)
             .build();
 
     MeasureOptions measureOptions1 =
@@ -151,7 +149,7 @@ class MeasuresControllerTest {
   }
 
   @Test
-  void shouldReturnListOfMeasuresForACommodityWithAdditionalCode() {
+  public void shouldReturnListOfMeasuresForACommodityWithAdditionalCode() {
     String commodityCode = "1234567890";
     UkCountry originCountry = UkCountry.GB;
     LocalDate exportDate = LocalDate.now();
@@ -159,17 +157,15 @@ class MeasuresControllerTest {
     String destinationCountry = "CN";
     String additionalCode = "1234";
 
-    MeasuresRequestBuilder request =
+    MeasuresRequest request =
         MeasuresRequest.builder()
             .tradeType(tradeType)
             .dateOfTrade(exportDate)
             .originCountry(originCountry.name())
             .destinationCountry(destinationCountry)
             .commodityCode(commodityCode)
-            .additionalCode(additionalCode);
-
-    MeasuresRequest requestWithoutLocale = request.build();
-    MeasuresRequest requestWithDefaultLocale = request.locale(Locale.EN).build();
+            .additionalCode(additionalCode)
+            .build();
 
     MeasureOptions measureOptions1 =
         MeasureOptions.builder()
@@ -195,7 +191,7 @@ class MeasuresControllerTest {
                                 .build())
                         .build()))
             .build();
-    given(measuresService.getMeasures(requestWithDefaultLocale))
+    given(measuresService.getMeasures(request))
         .willReturn(
             Flux.just(
                 ConditionBasedRestrictiveMeasure.builder()
@@ -206,7 +202,7 @@ class MeasuresControllerTest {
 
     webTestClient
         .get()
-        .uri(createRequest(requestWithoutLocale))
+        .uri(createRequest(request))
         .exchange()
         .expectStatus()
         .isOk()
@@ -234,7 +230,7 @@ class MeasuresControllerTest {
   }
 
   @Test
-  void shouldUseTodayAsTheDateOfTradeAndEnglishLocaleIfNotPassed() {
+  public void shouldReturnUseTodayAsTheDateOfTradeIfNotPassed() {
     String commodityCode = "1234567890";
     UkCountry destinationCountry = UkCountry.GB;
     TradeType tradeType = TradeType.IMPORT;
@@ -249,8 +245,7 @@ class MeasuresControllerTest {
             .commodityCode(commodityCode)
             .additionalCode(additionalCode);
     MeasuresRequest actualRequest = measuresRequestBuilder.build();
-    MeasuresRequest expectedRequest =
-        measuresRequestBuilder.dateOfTrade(currentLocalDate).locale(Locale.EN).build();
+    MeasuresRequest expectedRequest = measuresRequestBuilder.dateOfTrade(currentLocalDate).build();
 
     MeasureOptions measureOptions1 =
         MeasureOptions.builder()
@@ -304,7 +299,7 @@ class MeasuresControllerTest {
   }
 
   @Test
-  void shouldReturnErrorIfDestinationCountryPassedIsNotAValidUKCountryForImports() {
+  void shouldReturnErrorIfDestinationCountryPassedIsNotAValidUKCountryForImports(){
     MeasuresRequestBuilder measuresRequestBuilder =
         MeasuresRequest.builder()
             .tradeType(TradeType.IMPORT)
@@ -329,7 +324,7 @@ class MeasuresControllerTest {
   }
 
   @Test
-  void shouldReturnErrorIfOriginCountryPassedIsNotAValidUKCountryForExports() {
+  void shouldReturnErrorIfOriginCountryPassedIsNotAValidUKCountryForExports(){
     MeasuresRequestBuilder measuresRequestBuilder =
         MeasuresRequest.builder()
             .tradeType(TradeType.EXPORT)
@@ -359,8 +354,7 @@ class MeasuresControllerTest {
           builder
               .path(
                   String.format(
-                      CONTEXT_ROOT + "/v1/commodities/%s/restrictive-measures",
-                      request.getCommodityCode()))
+                      CONTEXT_ROOT + "/v1/commodities/%s/restrictive-measures", request.getCommodityCode()))
               .queryParam("tradeType", request.getTradeType())
               .queryParam("originCountry", request.getOriginCountry())
               .queryParam("destinationCountry", request.getDestinationCountry());
@@ -374,9 +368,6 @@ class MeasuresControllerTest {
       }
       if (Objects.nonNull(request.getAdditionalCode())) {
         uriBuilder.queryParam("additionalCode", request.getAdditionalCode());
-      }
-      if (Objects.nonNull(request.getLocale())) {
-        uriBuilder.queryParam("locale", request.getLocale().name());
       }
       return uriBuilder.build();
     };

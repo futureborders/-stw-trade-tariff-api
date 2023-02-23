@@ -1,0 +1,28 @@
+[
+  {
+    "id": 1,
+    "orderIndex": 1,
+    "description": "super header 1",
+    "explanatoryText": "super header explanatory text",
+    "header": {
+      "id": 1,
+      "orderIndex": 1,
+      "description": "Get your business ready",
+      "explanatoryText": null,
+      "linkText": "Register to bring goods across border"
+    }
+  },
+  {
+    "id": 1,
+    "orderIndex": 1,
+    "description": "super header 1",
+    "explanatoryText": "super header explanatory text",
+    "header": {
+      "id": 4,
+      "orderIndex": 2,
+      "description": "Check if you need an import license or certificate",
+      "explanatoryText": null,
+      "linkText": "Licences certificates restrictions"
+    }
+  }
+]

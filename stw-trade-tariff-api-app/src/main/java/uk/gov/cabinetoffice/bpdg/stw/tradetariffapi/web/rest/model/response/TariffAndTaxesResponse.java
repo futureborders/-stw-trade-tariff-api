@@ -19,8 +19,8 @@ package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.web.rest.model.response;
 import java.util.List;
 import lombok.Builder;
 import lombok.Value;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Tariff;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Tax;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Tariff;
 
 @Builder
 @Value

@@ -41,6 +41,9 @@ application:
   trade-tariff-api:
     url: http://stw-trade-tariff-api-wiremock-ft:9090
     timeout: 2s
+  signposting-content-db:
+    timeout: 1000ms
   content-api:
     url: http://stw-trade-tariff-api-wiremock-ft:9090
     timeout: ${STWGS_CONTENT_API_TIMEOUT:PT5S}
+  overlay-content-source: ${OVERLAY_CONTENT_SOURCE:DB}

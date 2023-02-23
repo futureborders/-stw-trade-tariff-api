@@ -21,31 +21,31 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import java.io.IOException;
 
 public final class JsonUtils {
-  public static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
+    private JsonUtils() {}
 
-  private JsonUtils() {}
+    public static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
 
-  public static String asJsonString(Object object) {
-    try {
-      return OBJECT_MAPPER.writeValueAsString(object);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
+    public static String asJsonString(Object object) {
+        try {
+            return OBJECT_MAPPER.writeValueAsString(object);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
-  }
 
-  public static <T> T asObject(String json, Class<T> clazz) {
-    try {
-      return OBJECT_MAPPER.readValue(json, clazz);
-    } catch (IOException e) {
-      return null;
+    public static <T> T asObject(String json, Class<T> clazz) {
+        try {
+            return OBJECT_MAPPER.readValue(json, clazz);
+        } catch (IOException e) {
+            return null;
+        }
     }
-  }
 
-  private static ObjectMapper createObjectMapper() {
-    SimpleModule module = new SimpleModule();
-    ObjectMapper mapper = new ObjectMapper();
-    mapper.registerModule(module);
-    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-    return mapper;
-  }
+    private static ObjectMapper createObjectMapper() {
+        SimpleModule module = new SimpleModule();
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(module);
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        return mapper;
+    }
 }

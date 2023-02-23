@@ -24,52 +24,61 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.config.AppConfig;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.model.MeasureTypeDescription;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.repository.MeasureTypeDescriptionRepository;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.dao.repository.MeasureTypeDescriptionContentRepo;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Duty;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Locale;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Measure;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Quota;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Tariff;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Tax;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.UkCountry;
 
 @Service
 @Slf4j
 @AllArgsConstructor(onConstructor_ = {@Autowired})
 public class DutyMeasureService {
 
-  private final MeasureTypeDescriptionRepository measureTypeDescriptionRepository;
+  private final MeasureTypeDescriptionContentRepo measureTypeDescriptionContentRepo;
 
   public Flux<Duty> getTariffsAndTaxesMeasures(
-      final List<Measure> measures, final TradeType tradeType, final Locale locale) {
+      final List<Measure> measures, final UkCountry destinationUkCountry) {
     return Flux.fromIterable(measures)
         .filter(measure -> measure.getDutyValue().isPresent())
         .flatMap(
-            measure ->
-                measureTypeDescriptionRepository
-                    .findMeasureTypeDescriptionsByMeasureTypeIdsAndTradeTypeAndLocale(
-                        List.of(measure.getMeasureType().getId()), tradeType, locale)
-                    .collectList()
-                    .flatMap(
-                        listOfMeasureTypeDescriptions -> {
-                          if (CollectionUtils.isEmpty(listOfMeasureTypeDescriptions)) {
-                            return Mono.empty();
-                          } else if (listOfMeasureTypeDescriptions.size() == 1) {
-                            return Mono.just(listOfMeasureTypeDescriptions.get(0));
-                          }
-                          return Mono.error(
-                              new RuntimeException(
-                                  format(
-                                      "More than one measure type descriptions configured for measure type %s, locale %s",
-                                      measure.getMeasureType().getId(), locale)));
-                        })
-                    .defaultIfEmpty(
-                        MeasureTypeDescription.builder()
-                            .measureTypeId(measure.getMeasureType().getId())
-                            .descriptionOverlay(measure.getMeasureType().getDescription())
-                            .build())
-                    .zipWith(Mono.defer(() -> Mono.just(measure))))
+            measure -> {
+              var locale = AppConfig.LOCALE;
+              return measureTypeDescriptionContentRepo
+                  .findByMeasureTypeIdInAndLocaleAndPublished(
+                      List.of(measure.getMeasureType().getId()), locale, true)
+                  .filter(
+                      measureTypeDescription ->
+                          measureTypeDescription
+                              .getDestinationCountryRestrictions()
+                              .contains(destinationUkCountry))
+                  .collectList()
+                  .flatMap(
+                      listOfMeasureTypeDescriptions -> {
+                        if (CollectionUtils.isEmpty(listOfMeasureTypeDescriptions)) {
+                          return Mono.empty();
+                        } else if (listOfMeasureTypeDescriptions.size() == 1) {
+                          return Mono.just(listOfMeasureTypeDescriptions.get(0));
+                        }
+                        return Mono.error(
+                            new RuntimeException(
+                                format(
+                                    "More than one measure type descriptions configured for measure type %s, locale %s, destination country %s",
+                                    measure.getMeasureType().getId(),
+                                    locale,
+                                    destinationUkCountry)));
+                      })
+                  .defaultIfEmpty(
+                      MeasureTypeDescription.builder()
+                          .measureTypeId(measure.getMeasureType().getId())
+                          .descriptionOverlay(measure.getMeasureType().getDescription())
+                          .build())
+                  .zipWith(Mono.defer(() -> Mono.just(measure)));
+            })
         .map(
             measureTypeDescriptionWithOptions ->
                 measureTypeDescriptionWithOptions.getT2().isTaxMeasure()

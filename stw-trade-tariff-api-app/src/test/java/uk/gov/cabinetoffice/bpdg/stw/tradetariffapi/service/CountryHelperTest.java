@@ -30,16 +30,14 @@ public class CountryHelperTest {
   })
   void shouldIdentifyEUCountry(String countryCode) {
     assertThat(CountryHelper.isEUCountry(countryCode))
-        .as(format("Expecting country %s to be recognised as EU country", countryCode))
-        .isTrue();
+      .as(format("Expecting country %s to be recognised as EU country", countryCode)).isTrue();
   }
 
   @ParameterizedTest
   @CsvSource({"GB", "XI"})
   void shouldNotRecogniseUKAsEUCountry(String countryCode) {
     assertThat(CountryHelper.isEUCountry(countryCode))
-        .as(format("Expecting country %s not to be recognised as EU country", countryCode))
-        .isFalse();
+      .as(format("Expecting country %s not to be recognised as EU country", countryCode)).isFalse();
   }
 
   @Test

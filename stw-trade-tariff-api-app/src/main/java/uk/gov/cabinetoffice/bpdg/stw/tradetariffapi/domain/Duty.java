@@ -18,8 +18,6 @@ package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain;
 
 public interface Duty {
   String getMeasureTypeId();
-
   String getText();
-
   String getValue();
 }

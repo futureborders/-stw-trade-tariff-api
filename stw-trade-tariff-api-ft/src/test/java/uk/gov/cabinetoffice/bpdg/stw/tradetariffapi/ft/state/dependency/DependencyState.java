@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.ft.state.MockState;
+import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.ft.state.dependency.db.DatabaseState;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.ft.state.dependency.tts.TradeTariffServiceState;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.ft.state.util.ReflectionUtils;
 
@@ -28,6 +29,7 @@ import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.ft.state.util.ReflectionUtil
 @Data
 public class DependencyState {
 
+  @Autowired DatabaseState databaseState;
   @Autowired TradeTariffServiceState tradeTariffServiceState;
 
   public void reset() {

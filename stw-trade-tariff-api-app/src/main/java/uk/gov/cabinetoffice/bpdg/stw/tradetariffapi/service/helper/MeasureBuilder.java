@@ -17,7 +17,6 @@ package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.service.helper;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -31,24 +30,18 @@ import uk.gov.cabinetoffice.bpdg.stw.external.hmrc.tradetariff.model.commodity.r
 import uk.gov.cabinetoffice.bpdg.stw.external.hmrc.tradetariff.model.commodity.relationships.CommodityMeasureType;
 import uk.gov.cabinetoffice.bpdg.stw.external.hmrc.tradetariff.model.commodity.relationships.DutyExpression;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.AdditionalCode;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.DocumentaryMeasureCondition;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.GeographicalArea;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.Measure;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureCondition;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureConditionCode;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureType;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.NegativeMeasureCondition;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.PriceBasedThresholdMeasureCondition;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.PricePerUnitBasedThresholdMeasureCondition;
 import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.TradeType;
-import uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.WeightOrVolumeOrUnitBasedThresholdMeasureCondition;
 
 @Component
 @Slf4j
 public class MeasureBuilder {
 
-  public List<Measure> from(
-      TradeTariffCommodityResponse tradeTariffCommodityResponse, String commodityCode) {
+  public List<Measure> from(TradeTariffCommodityResponse tradeTariffCommodityResponse) {
     return tradeTariffCommodityResponse.getMeasures().stream()
         .filter(m -> m.isImport() || m.isExport())
         .map(
@@ -59,7 +52,7 @@ public class MeasureBuilder {
                     .measureType(findMeasureType(m, tradeTariffCommodityResponse.getMeasureTypes()))
                     .geographicalArea(
                         findGeographicalArea(
-                            m, tradeTariffCommodityResponse.getGeographicalAreas(), commodityCode))
+                            m, tradeTariffCommodityResponse.getGeographicalAreas()))
                     .measureConditions(
                         findMeasureConditions(
                             m, tradeTariffCommodityResponse.getMeasureConditions()))
@@ -144,66 +137,18 @@ public class MeasureBuilder {
                                 String.format(
                                     "Cannot find measure condition for measure condition %s",
                                     measureConditionId))))
-        .map(this::categoriseMeasureCondition)
+        .map(
+            measureCondition ->
+                MeasureCondition.builder()
+                    .id(measureCondition.getId())
+                    .action(measureCondition.getAction())
+                    .condition(measureCondition.getCondition())
+                    .conditionCode(MeasureConditionCode.from(measureCondition.getConditionCode()))
+                    .documentCode(measureCondition.getDocumentCode())
+                    .dutyExpression(measureCondition.getDutyExpression())
+                    .requirement(measureCondition.getRequirement())
+                    .build())
         .collect(Collectors.toList());
-  }
-
-  private MeasureCondition categoriseMeasureCondition(CommodityMeasureCondition measureCondition) {
-    if (StringUtils.isBlank(measureCondition.getRequirement())) {
-      return NegativeMeasureCondition.builder()
-          .id(measureCondition.getId())
-          .action(measureCondition.getAction())
-          .condition(measureCondition.getCondition())
-          .conditionCode(MeasureConditionCode.from(measureCondition.getConditionCode()))
-          .requirement(measureCondition.getRequirement())
-          .build();
-    }
-
-    if (StringUtils.isNotEmpty(measureCondition.getConditionDutyAmount())) {
-      if (StringUtils.isNotEmpty(measureCondition.getConditionMonetaryUnitCode())) {
-        if (StringUtils.isNotBlank(measureCondition.getConditionMeasurementUnitCode())) {
-          return PricePerUnitBasedThresholdMeasureCondition.builder()
-              .id(measureCondition.getId())
-              .action(measureCondition.getAction())
-              .condition(measureCondition.getCondition())
-              .conditionCode(MeasureConditionCode.from(measureCondition.getConditionCode()))
-              .conditionDutyAmount(measureCondition.getConditionDutyAmount())
-              .conditionMonetaryUnitCode(measureCondition.getConditionMonetaryUnitCode())
-              .conditionMeasurementUnitCode(measureCondition.getConditionMeasurementUnitCode())
-              .requirement(measureCondition.getRequirement())
-              .build();
-        } else {
-          return PriceBasedThresholdMeasureCondition.builder()
-              .id(measureCondition.getId())
-              .action(measureCondition.getAction())
-              .condition(measureCondition.getCondition())
-              .conditionCode(MeasureConditionCode.from(measureCondition.getConditionCode()))
-              .conditionDutyAmount(measureCondition.getConditionDutyAmount())
-              .conditionMonetaryUnitCode(measureCondition.getConditionMonetaryUnitCode())
-              .requirement(measureCondition.getRequirement())
-              .build();
-        }
-      }
-
-      return WeightOrVolumeOrUnitBasedThresholdMeasureCondition.builder()
-          .id(measureCondition.getId())
-          .action(measureCondition.getAction())
-          .condition(measureCondition.getCondition())
-          .conditionCode(MeasureConditionCode.from(measureCondition.getConditionCode()))
-          .conditionDutyAmount(measureCondition.getConditionDutyAmount())
-          .conditionMeasurementUnitCode(measureCondition.getConditionMeasurementUnitCode())
-          .requirement(measureCondition.getRequirement())
-          .build();
-    }
-    return DocumentaryMeasureCondition.builder()
-        .id(measureCondition.getId())
-        .action(measureCondition.getAction())
-        .condition(measureCondition.getCondition())
-        .conditionCode(MeasureConditionCode.from(measureCondition.getConditionCode()))
-        .documentCode(measureCondition.getDocumentCode())
-        .requirement(measureCondition.getRequirement())
-        .description(measureCondition.getCertificateDescription())
-        .build();
   }
 
   private MeasureType findMeasureType(CommodityMeasure m, List<CommodityMeasureType> measureTypes) {
@@ -224,7 +169,7 @@ public class MeasureBuilder {
   }
 
   private GeographicalArea findGeographicalArea(
-      CommodityMeasure m, List<CommodityGeographicalArea> geographicalAreas, String commodityCode) {
+      CommodityMeasure m, List<CommodityGeographicalArea> geographicalAreas) {
     return geographicalAreas.stream()
         .filter(geographicalArea -> geographicalArea.getId().equals(m.getGeographicalAreaId()))
         .findFirst()
@@ -236,18 +181,9 @@ public class MeasureBuilder {
                     .childrenGeographicalAreas(
                         new HashSet<>(geographicalArea.getChildrenGeographicalAreas()))
                     .build())
-        .orElseGet(
-            () -> {
-              log.warn(
-                  "Cannot find geographical area {} for measure {} on commodity {}",
-                  m.getGeographicalAreaId(),
-                  m.getId(),
-                  commodityCode);
-              return GeographicalArea.builder()
-                  .id(m.getGeographicalAreaId())
-                  .description("")
-                  .childrenGeographicalAreas(Set.of())
-                  .build();
-            });
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    String.format("Cannot find geographical area for measure %s", m.getId())));
   }
 }

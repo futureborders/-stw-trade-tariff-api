@@ -15,346 +15,55 @@
 package uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.MeasureOptionType.THRESHOLD;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ThresholdMeasureOptionSubType.PRICE_BASED;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ThresholdMeasureOptionSubType.PRICE_PER_UNIT_BASED;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ThresholdMeasureOptionSubType.UNIT_BASED;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ThresholdMeasureOptionSubType.VOLUME_BASED;
-import static uk.gov.cabinetoffice.bpdg.stw.tradetariffapi.domain.ThresholdMeasureOptionSubType.WEIGHT_BASED;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 
 class ThresholdMeasureOptionTest {
 
-  @Nested
-  class WeightOrVolumeOrUnitBasedThresholdMeasureConditions {
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    void shouldReturnCorrectDescriptionForMaxType(Locale locale) {
-      ThresholdMeasureOption thresholdMeasureOption =
-          ThresholdMeasureOption.builder()
-              .threshold(
-                  WeightOrVolumeOrUnitBasedThresholdMeasureCondition.builder()
-                      .conditionDutyAmount("100")
-                      .conditionMeasurementUnitCode(MeasureUnit.LTR.name())
-                      .requirement("<span>100.00</span> <abbr title='Litre'>l</abbr>")
-                      .conditionCode(MeasureConditionCode.E)
-                      .build())
-              .locale(locale)
-              .build();
+  @Test
+  void shouldReturnCorrectDescriptionForMaxType() {
+    ThresholdMeasureOption thresholdMeasureOption =
+      ThresholdMeasureOption.builder()
+        .threshold(
+          MeasureCondition.builder()
+            .requirement("<span>100.00</span> <abbr title='Litre'>l</abbr>")
+            .conditionCode(MeasureConditionCode.E)
+            .build())
+        .build();
 
-      assertThat(thresholdMeasureOption.getDescriptionOverlay())
-          .isEqualTo(
-              locale == Locale.CY
-                  ? "If your shipment tbc less than 100 tbc, then your goods are exempt."
-                  : "If your shipment is less than 100 litres, then your goods are exempt.");
-    }
-
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    void shouldReturnCorrectDescriptionForMinType(Locale locale) {
-      ThresholdMeasureOption thresholdMeasureOption =
-          ThresholdMeasureOption.builder()
-              .threshold(
-                  WeightOrVolumeOrUnitBasedThresholdMeasureCondition.builder()
-                      .conditionDutyAmount("100")
-                      .conditionMeasurementUnitCode(MeasureUnit.LTR.name())
-                      .requirement("<span>100.00</span> <abbr title='Litre'>l</abbr>")
-                      .conditionCode(MeasureConditionCode.F)
-                      .build())
-              .locale(locale)
-              .build();
-
-      assertThat(thresholdMeasureOption.getDescriptionOverlay())
-          .isEqualTo(
-              locale == Locale.CY
-                  ? "If your shipment tbc more than 100 tbc, then your goods are exempt."
-                  : "If your shipment is more than 100 litres, then your goods are exempt.");
-    }
-
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    void shouldIgnoreDecimalPlacesOfQuantity(Locale locale) {
-      ThresholdMeasureOption thresholdMeasureOption =
-          ThresholdMeasureOption.builder()
-              .threshold(
-                  WeightOrVolumeOrUnitBasedThresholdMeasureCondition.builder()
-                      .conditionDutyAmount("100.0")
-                      .conditionMeasurementUnitCode(MeasureUnit.LTR.name())
-                      .requirement("<span>100.00</span> <abbr title='Litre'>l</abbr>")
-                      .conditionCode(MeasureConditionCode.F)
-                      .build())
-              .locale(locale)
-              .build();
-
-      assertThat(thresholdMeasureOption.getDescriptionOverlay())
-          .isEqualTo(
-              locale == Locale.CY
-                  ? "If your shipment tbc more than 100 tbc, then your goods are exempt."
-                  : "If your shipment is more than 100 litres, then your goods are exempt.");
-    }
-
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    void shouldSetPropertiesForVolumeBasedThreshold(Locale locale) {
-      ThresholdMeasureOption thresholdMeasureOption =
-          ThresholdMeasureOption.builder()
-              .threshold(
-                  WeightOrVolumeOrUnitBasedThresholdMeasureCondition.builder()
-                      .conditionDutyAmount("100.0")
-                      .conditionMeasurementUnitCode(MeasureUnit.LTR.name())
-                      .requirement("<span>100.00</span> <abbr title='Litre'>l</abbr>")
-                      .conditionCode(MeasureConditionCode.F)
-                      .build())
-              .locale(locale)
-              .build();
-
-      assertThat(thresholdMeasureOption.getType()).isEqualTo(THRESHOLD);
-      assertThat(thresholdMeasureOption.getSubtype()).isEqualTo(VOLUME_BASED);
-      assertThat(thresholdMeasureOption.getUnit()).isNull();
-    }
-
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    void shouldSetPropertiesForWeightBasedThreshold(Locale locale) {
-      ThresholdMeasureOption thresholdMeasureOption =
-          ThresholdMeasureOption.builder()
-              .threshold(
-                  WeightOrVolumeOrUnitBasedThresholdMeasureCondition.builder()
-                      .conditionDutyAmount("2.0")
-                      .conditionMeasurementUnitCode(MeasureUnit.KGM.name())
-                      .requirement("<span>2.00</span> <abbr title='Kilogram'>kg</abbr>")
-                      .conditionCode(MeasureConditionCode.F)
-                      .build())
-              .locale(locale)
-              .build();
-
-      assertThat(thresholdMeasureOption.getType()).isEqualTo(THRESHOLD);
-      assertThat(thresholdMeasureOption.getSubtype()).isEqualTo(WEIGHT_BASED);
-      assertThat(thresholdMeasureOption.getUnit()).isNull();
-    }
-
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    void shouldSetPropertiesForUnitBasedThreshold(Locale locale) {
-      ThresholdMeasureOption thresholdMeasureOption =
-          ThresholdMeasureOption.builder()
-              .threshold(
-                  WeightOrVolumeOrUnitBasedThresholdMeasureCondition.builder()
-                      .conditionDutyAmount("2.0")
-                      .conditionMeasurementUnitCode(MeasureUnit.GP1.name())
-                      .requirement("<span>2</span> <abbr title='Units'>units</abbr>")
-                      .conditionCode(MeasureConditionCode.F)
-                      .build())
-              .locale(locale)
-              .build();
-
-      assertThat(thresholdMeasureOption.getType()).isEqualTo(THRESHOLD);
-      assertThat(thresholdMeasureOption.getSubtype()).isEqualTo(UNIT_BASED);
-      assertThat(thresholdMeasureOption.getUnit()).isNull();
-    }
+    assertThat(thresholdMeasureOption.getDescriptionOverlay())
+      .isEqualTo("If your shipment is less than 100 litres, then your goods are exempt.");
   }
 
-  @Nested
-  class PriceBasedThresholdMeasureConditions {
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    void shouldReturnCorrectDescriptionForMaxType(Locale locale) {
-      ThresholdMeasureOption thresholdMeasureOption =
-          ThresholdMeasureOption.builder()
-              .threshold(
-                  PriceBasedThresholdMeasureCondition.builder()
-                      .conditionDutyAmount("100")
-                      .conditionMonetaryUnitCode(MonetaryUnitCode.GBP.name())
-                      .requirement("<span>100.00</span> GBP")
-                      .conditionCode(MeasureConditionCode.E)
-                      .build())
-              .locale(locale)
-              .build();
+  @Test
+  void shouldReturnCorrectDescriptionForMinType() {
+    ThresholdMeasureOption thresholdMeasureOption =
+      ThresholdMeasureOption.builder()
+        .threshold(
+          MeasureCondition.builder()
+            .requirement("<span>100.00</span> <abbr title='Litre'>l</abbr>")
+            .conditionCode(MeasureConditionCode.F)
+            .build())
+        .build();
 
-      assertThat(thresholdMeasureOption.getDescriptionOverlay())
-          .isEqualTo(
-              "If the value of your shipment is less than £100, then your goods are exempt.");
-    }
-
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    void shouldReturnCorrectDescriptionForMinType(Locale locale) {
-      ThresholdMeasureOption thresholdMeasureOption =
-          ThresholdMeasureOption.builder()
-              .threshold(
-                  PriceBasedThresholdMeasureCondition.builder()
-                      .conditionDutyAmount("100")
-                      .conditionMonetaryUnitCode(MonetaryUnitCode.GBP.name())
-                      .requirement("<span>100.00</span> GBP")
-                      .conditionCode(MeasureConditionCode.F)
-                      .build())
-              .locale(locale)
-              .build();
-
-      assertThat(thresholdMeasureOption.getDescriptionOverlay())
-          .isEqualTo(
-              "If the value of your shipment is more than £100, then your goods are exempt.");
-    }
-
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    void shouldIgnoreDecimalPlacesOfAmount(Locale locale) {
-      ThresholdMeasureOption thresholdMeasureOption =
-          ThresholdMeasureOption.builder()
-              .threshold(
-                  PriceBasedThresholdMeasureCondition.builder()
-                      .conditionDutyAmount("100.0")
-                      .conditionMonetaryUnitCode(MonetaryUnitCode.GBP.name())
-                      .requirement("<span>100.00</span> GBP")
-                      .conditionCode(MeasureConditionCode.E)
-                      .build())
-              .locale(locale)
-              .build();
-
-      assertThat(thresholdMeasureOption.getDescriptionOverlay())
-          .isEqualTo(
-              "If the value of your shipment is less than £100, then your goods are exempt.");
-    }
-
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    void shouldSetPropertiesForPriceBasedThreshold(Locale locale) {
-      ThresholdMeasureOption thresholdMeasureOption =
-          ThresholdMeasureOption.builder()
-              .threshold(
-                  PriceBasedThresholdMeasureCondition.builder()
-                      .conditionDutyAmount("100.0")
-                      .conditionMonetaryUnitCode(MonetaryUnitCode.GBP.name())
-                      .requirement("<span>100.00</span> GBP")
-                      .conditionCode(MeasureConditionCode.E)
-                      .build())
-              .locale(locale)
-              .build();
-
-      assertThat(thresholdMeasureOption.getType()).isEqualTo(THRESHOLD);
-      assertThat(thresholdMeasureOption.getSubtype()).isEqualTo(PRICE_BASED);
-      assertThat(thresholdMeasureOption.getUnit()).isNull();
-    }
+    assertThat(thresholdMeasureOption.getDescriptionOverlay())
+      .isEqualTo("If your shipment is more than 100 litres, then your goods are exempt.");
   }
 
-  @Nested
-  class PricePerUnitBasedThresholdMeasureConditions {
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    void shouldReturnCorrectDescriptionForMaxType(Locale locale) {
-      ThresholdMeasureOption thresholdMeasureOption =
-          ThresholdMeasureOption.builder()
-              .threshold(
-                  PricePerUnitBasedThresholdMeasureCondition.builder()
-                      .conditionDutyAmount("250")
-                      .conditionMonetaryUnitCode(MonetaryUnitCode.GBP.name())
-                      .conditionMeasurementUnitCode(MeasureUnit.NAR.name())
-                      .requirement(
-                          "<span>250.00</span> GBP / <abbr title='Number of items'>p/st</abbr>")
-                      .conditionCode(MeasureConditionCode.E)
-                      .build())
-              .locale(locale)
-              .build();
+  @Test
+  void shouldThrowExceptionWhenPatternUnrecognised() {
+    ThresholdMeasureOption.ThresholdMeasureOptionBuilder thresholdMeasureOptionBuilder =
+      ThresholdMeasureOption.builder()
+        .threshold(
+          MeasureCondition.builder()
+            .requirement("<div>100.00</div> <abbr title='Litre'>l</abbr>")
+            .conditionCode(MeasureConditionCode.E)
+            .build());
 
-      assertThat(thresholdMeasureOption.getDescriptionOverlay())
-          .isEqualTo(
-              locale == Locale.CY
-                  ? "If the value of your shipment is less than £250 / tbc, then your goods are exempt."
-                  : "If the value of your shipment is less than £250 / item, then your goods are exempt.");
-    }
-
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    void shouldReturnCorrectDescriptionForMinType(Locale locale) {
-      ThresholdMeasureOption thresholdMeasureOption =
-          ThresholdMeasureOption.builder()
-              .threshold(
-                  PricePerUnitBasedThresholdMeasureCondition.builder()
-                      .conditionDutyAmount("250")
-                      .conditionMonetaryUnitCode(MonetaryUnitCode.GBP.name())
-                      .conditionMeasurementUnitCode(MeasureUnit.NAR.name())
-                      .requirement(
-                          "<span>250.00</span> GBP / <abbr title='Number of items'>p/st</abbr>")
-                      .conditionCode(MeasureConditionCode.F)
-                      .build())
-              .locale(locale)
-              .build();
-
-      assertThat(thresholdMeasureOption.getDescriptionOverlay())
-          .isEqualTo(
-              locale == Locale.CY
-                  ? "If the value of your shipment is more than £250 / tbc, then your goods are exempt."
-                  : "If the value of your shipment is more than £250 / item, then your goods are exempt.");
-    }
-
-    @ParameterizedTest
-    @EnumSource(Locale.class)
-    void shouldIgnoreDecimalPlacesOfAmount(Locale locale) {
-      ThresholdMeasureOption thresholdMeasureOption =
-          ThresholdMeasureOption.builder()
-              .threshold(
-                  PricePerUnitBasedThresholdMeasureCondition.builder()
-                      .conditionDutyAmount("250.0")
-                      .conditionMonetaryUnitCode(MonetaryUnitCode.GBP.name())
-                      .conditionMeasurementUnitCode(MeasureUnit.NAR.name())
-                      .requirement(
-                          "<span>250.00</span> GBP / <abbr title='Number of items'>p/st</abbr>")
-                      .conditionCode(MeasureConditionCode.F)
-                      .build())
-              .locale(locale)
-              .build();
-
-      assertThat(thresholdMeasureOption.getDescriptionOverlay())
-          .isEqualTo(
-              locale == Locale.CY
-                  ? "If the value of your shipment is more than £250 / tbc, then your goods are exempt."
-                  : "If the value of your shipment is more than £250 / item, then your goods are exempt.");
-    }
-
-    @Test
-    void shouldSetPropertiesForPricePerUnitBasedThresholdForEnglish() {
-      ThresholdMeasureOption thresholdMeasureOption =
-          ThresholdMeasureOption.builder()
-              .threshold(
-                  PricePerUnitBasedThresholdMeasureCondition.builder()
-                      .conditionDutyAmount("250.0")
-                      .conditionMonetaryUnitCode(MonetaryUnitCode.GBP.name())
-                      .conditionMeasurementUnitCode(MeasureUnit.NAR.name())
-                      .requirement(
-                          "<span>250.00</span> GBP / <abbr title='Number of items'>p/st</abbr>")
-                      .conditionCode(MeasureConditionCode.F)
-                      .build())
-              .locale(Locale.EN)
-              .build();
-
-      assertThat(thresholdMeasureOption.getType()).isEqualTo(THRESHOLD);
-      assertThat(thresholdMeasureOption.getSubtype()).isEqualTo(PRICE_PER_UNIT_BASED);
-      assertThat(thresholdMeasureOption.getUnit()).isEqualTo("item");
-    }
-
-    @Test
-    void shouldSetPropertiesForPricePerUnitBasedThresholdForWelsh() {
-      ThresholdMeasureOption thresholdMeasureOption =
-          ThresholdMeasureOption.builder()
-              .threshold(
-                  PricePerUnitBasedThresholdMeasureCondition.builder()
-                      .conditionDutyAmount("250.0")
-                      .conditionMonetaryUnitCode(MonetaryUnitCode.GBP.name())
-                      .conditionMeasurementUnitCode(MeasureUnit.NAR.name())
-                      .requirement(
-                          "<span>250.00</span> GBP / <abbr title='Number of items'>p/st</abbr>")
-                      .conditionCode(MeasureConditionCode.F)
-                      .build())
-              .locale(Locale.CY)
-              .build();
-
-      assertThat(thresholdMeasureOption.getType()).isEqualTo(THRESHOLD);
-      assertThat(thresholdMeasureOption.getSubtype()).isEqualTo(PRICE_PER_UNIT_BASED);
-      assertThat(thresholdMeasureOption.getUnit()).isEqualTo("tbc");
-    }
+    assertThatExceptionOfType(IllegalArgumentException.class)
+      .isThrownBy(thresholdMeasureOptionBuilder::build)
+      .withMessage(
+        "Measure condition with requirement <div>100.00</div> <abbr title='Litre'>l</abbr> does not match expected format <span>(\\d*\\.?\\d*)</span> <abbr title='(.*)'>.*</abbr>");
   }
 }

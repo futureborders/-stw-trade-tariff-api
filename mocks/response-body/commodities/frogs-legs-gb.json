@@ -14,7 +14,7 @@
       "consigned_from": null,
       "basic_duty_rate": "\u003cspan\u003e6.00\u003c/span\u003e %",
       "meursing_code": false,
-      "declarable": true
+      "declarable": false
     },
     "relationships": {
       "footnotes": {

@@ -16,7 +16,7 @@
   <artifactId>stw-trade-tariff</artifactId>
   <name>stw-trade-tariff root</name>
   <packaging>pom</packaging>
-  <version>${revision}</version>
+  <version>0.0.742</version>
 
   <properties>
     <revision>0.0.1-SNAPSHOT</revision>

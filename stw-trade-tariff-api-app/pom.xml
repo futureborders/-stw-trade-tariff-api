@@ -7,7 +7,7 @@
   <parent>
     <artifactId>stw-trade-tariff</artifactId>
     <groupId>uk.gov.cabinetoffice.bpdg.stw.stw-trade-tariff-api</groupId>
-    <version>${revision}</version>
+    <version>0.0.749</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>stw-trade-tariff-api-app</artifactId>
